@@ -1,0 +1,8 @@
+*/build
+*/*/build
+*/*.wts
+*/*.ppm
+*idea*
+*/__pycache__/*
+*/runs/
+*/runs/*
