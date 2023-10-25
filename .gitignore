@@ -27,3 +27,7 @@
 *.data
 *.json
 *.cfg
+*/*/build
+*/*/3rdparty
+*/*/*.soc
+*/*/*.pcie
