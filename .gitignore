@@ -28,7 +28,8 @@
 *.json
 *.cfg
 */*/build
-*/*/3rdparty
 */*/*.soc
 */*/*.pcie
 */*/docs
+*/*/3rdparty/*/lib
+*/*/3rdparty/*/lib/*
