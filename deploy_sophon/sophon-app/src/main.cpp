@@ -22,6 +22,13 @@ using json = nlohmann::json;
 using namespace std;
 #define USE_OPENCV_DECODE 0
 
+#define ADDRESS     "tcp://broker.emqx.io:1883"
+#define CLIENTID    "ExampleClientPub"
+#define TOPIC       "MQTT Examples"
+#define PAYLOAD     "Hello World!"
+#define QOS         2
+#define TIMEOUT     10000L
+
 int main(int argc, char* argv[]) {
     cout.setf(ios::fixed);
     // get params
@@ -59,6 +66,28 @@ int main(int argc, char* argv[]) {
     //     cout << "Cannot find input path." << endl;
     //     exit(1);
     // }
+
+    // creat MQTTClient
+    MQTTClient client;
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    MQTTClient_message pubmsg = MQTTClient_message_initializer;
+    MQTTClient_deliveryToken token;
+    char buffer[20];
+
+    int rc = 0;
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to create client, return code %d\n", rc);
+        exit(EXIT_FAILURE);
+    }
+
+    conn_opts.keepAliveInterval = 20;
+    conn_opts.cleansession = 1;
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to connect, return code %d\n", rc);
+        exit(EXIT_FAILURE);
+    }
 
     // creat handle
     auto handle = sail::Handle(dev_id);
@@ -184,6 +213,7 @@ int main(int argc, char* argv[]) {
     // test video
     else {
         vector<YoloV5BoxVec> boxes;
+        vector<json> results_json;
         while(1){
             try
             {
@@ -207,25 +237,57 @@ int main(int argc, char* argv[]) {
                     CV_Assert(0 == yolov5.Detect(batch_imgs, boxes));
                     for (int i = 0; i < batch_size; i++) { //use real batch size
                         cout << ++id << ", det_nums: " << boxes[i].size() << endl;
+                        vector<json> bboxes_json;
                         for (auto bbox : boxes[i]) {
 #if DEBUG
-                                cout << "  class id=" << bbox.class_id << ", score = " << bbox.score << " (x=" << bbox.x
-                                    << ",y=" << bbox.y << ",w=" << bbox.width << ",h=" << bbox.height << ")" << endl;
+                            cout << "  class id=" << bbox.class_id << ", score = " << bbox.score << " (x=" << bbox.x
+                                << ",y=" << bbox.y << ",w=" << bbox.width << ",h=" << bbox.height << ")" << endl;
 #endif
                             // draw image
                             yolov5.draw_bmcv(bbox.class_id, bbox.score, bbox.x, bbox.y, bbox.width, bbox.height,
                                             batch_imgs[i], false);
+
+                            // save result
+                            json bbox_json;
+                            bbox_json["category_id"] = bbox.class_id;
+                            bbox_json["score"] = bbox.score;
+                            bbox_json["bbox"] = {bbox.x, bbox.y, bbox.width, bbox.height};
+                            bboxes_json.push_back(bbox_json);
                         }
+                        json res_json;
+                        res_json["image_name"] = to_string(id) + ".jpg";
+                        res_json["bboxes"] = bboxes_json;
+                        results_json.push_back(res_json);
                         bmcv.imwrite("./results/images/" + to_string(id) + ".jpg" , batch_imgs[i]);
+
+                        sprintf(buffer, "Hello, World, %d!", id);
+                        pubmsg.payload = buffer;
+                        pubmsg.payloadlen = (int)strlen(buffer);
+                        pubmsg.qos = QOS;
+                        pubmsg.retained = 0;
+                        if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+                        {
+                            printf("Failed to publish message, return code %d\n", rc);
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     boxes.clear();
                 }
             }
             catch(runtime_error &e)
             {
-                cout << "Failed to open input file: " << input << endl;
+                // cout << "Failed to open input file: " << input << endl;
+                break;
             }
         }
+        string dataset_name = "voc";
+        // index = bmodel_file.rfind("/");
+        // string model_name = bmodel_file.substr(index + 1);
+        string model_name = "yolov5s_v6.1_3output_int8_1b";
+        string json_file = "results/" + model_name + "_" + dataset_name + "_sail_cpp" + "_result.json";
+        cout << "================" << endl;
+        cout << "result saved in " << json_file << endl;
+        ofstream(json_file) << setw(4) << results_json;
     }
     
     // print speed
@@ -234,6 +296,17 @@ int main(int argc, char* argv[]) {
     yolov5_ts.build_timeline("yolov5 test");
     yolov5_ts.show_summary("yolov5 test");
     yolov5_ts.clear();
+
+    printf("Waiting for up to %d seconds for publication of %s\n"
+                "on topic %s for client with ClientID: %s\n",
+                (int)(TIMEOUT/1000), PAYLOAD, TOPIC, CLIENTID);
+    rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
+    printf("Message with delivery token %d delivered\n", token);
+
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
+        printf("Failed to disconnect, return code %d\n", rc);
+
+    MQTTClient_destroy(&client);
 
     return 0;
 }
