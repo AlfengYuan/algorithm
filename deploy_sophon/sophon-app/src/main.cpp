@@ -16,6 +16,8 @@
 #include "ff_decode.hpp"
 #include "yolov5.hpp"
 #include <cassert>
+#include "MQTTClient.h"
+
 using json = nlohmann::json;
 using namespace std;
 #define USE_OPENCV_DECODE 0
