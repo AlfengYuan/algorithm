@@ -33,3 +33,7 @@
 */*/docs
 */*/3rdparty/*/lib
 */*/3rdparty/*/lib/*
+*/data
+*/mmpretrain.egg-info
+*/work_dirs
+*/work_dirs/*
