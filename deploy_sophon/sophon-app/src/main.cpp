@@ -15,6 +15,7 @@
 #include "opencv2/opencv.hpp"
 #include "ff_decode.hpp"
 #include "yolov5.hpp"
+#include "resnet.hpp"
 #include <cassert>
 #include "MQTTClient.h"
 

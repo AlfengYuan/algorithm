@@ -44,4 +44,3 @@ aux_source_directory(./src SRC_FILES)
 
 add_executable(sophon-app.soc ${SRC_FILES})
 target_link_libraries(sophon-app.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} pthread)
-#target_link_libraries(sophon-app.soc ${SAIL_LIBS})
