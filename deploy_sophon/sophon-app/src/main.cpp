@@ -20,6 +20,7 @@
 #include "resnet.hpp"
 #include <cassert>
 #include "MQTTClient.h"
+#include "configuration.h"
 
 
 using json = nlohmann::json;
@@ -37,11 +38,41 @@ int yolov5_main(int argc, char* argv[]);
 int resnet50_main(int argc, char *argv[]);
 
 
+const char *APP_ARG_STRING = "{config | ./cameras_multi_myself.json | path to cameras_multi.json}";
+
 int main(int argc, char *argv[])
 {
+    bmlib_log_set_level(BMLIB_LOG_VERBOSE);
+
+    const char *base_keys = "{help | 0 | Print help information.}";
+    std::string keys;
+    keys = base_keys;
+    keys += APP_ARG_STRING;
+    cv::CommandLineParser parser(argc, argv, keys);
+    if(parser.get<bool>("help"))
+    {
+        parser.printMessage();
+        return 0;
+    }
+    std::string config_file = parser.get<std::string>("config");
+    
+    Config cfg(config_file.c_str());
+    if(!cfg.valid_check())
+    {
+        std::cout << "ERROR:" << config_file << " error, please check!" << std::endl;
+    }
+
+    std::vector<std::string> urls = cfg.cardUrls(0);
+    std::cout << "====================" << std::endl;
+    
+    for(auto url : urls)
+    {
+        std::cout << url << std::endl;
+    }
+    std::cout << "====================" << std::endl;
     int ret = 0;
     // ret = yolov5_main(argc, argv);
-    ret = resnet50_main(argc, argv);
+    // ret = resnet50_main(argc, argv);
     return ret; 
 }
 
