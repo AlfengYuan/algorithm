@@ -10,7 +10,8 @@ model = dict(
     neck=dict(type='GlobalAveragePooling'),
     head=dict(
         type='LinearClsHead',
-        num_classes=1000,
+        # num_classes=1000,
+        num_classes=3,
         in_channels=2048,
         loss=dict(
             type='LabelSmoothLoss',
@@ -18,7 +19,7 @@ model = dict(
             num_classes=1000,
             reduction='mean',
             loss_weight=1.0),
-        topk=(1, 5),
+        topk=(1, 3),
         cal_acc=False),
     train_cfg=dict(augments=dict(type='Mixup', alpha=0.2)),
 )

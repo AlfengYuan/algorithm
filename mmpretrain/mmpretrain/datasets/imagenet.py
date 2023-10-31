@@ -5,7 +5,7 @@ from mmengine import fileio
 from mmengine.logging import MMLogger
 
 from mmpretrain.registry import DATASETS
-from .categories import IMAGENET_CATEGORIES
+from .categories import IMAGENET_CATEGORIES, FENSHUI_CATEGORITES
 from .custom import CustomDataset
 
 
@@ -89,7 +89,8 @@ class ImageNet(CustomDataset):
     """  # noqa: E501
 
     IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif')
-    METAINFO = {'classes': IMAGENET_CATEGORIES}
+    # METAINFO = {'classes': IMAGENET_CATEGORIES}
+    METAINFO = {'classes': FENSHUI_CATEGORITES}
 
     def __init__(self,
                  data_root: str = '',

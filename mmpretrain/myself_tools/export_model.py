@@ -24,8 +24,14 @@ def get_mmpretrain_resnet50_onnx():
     model.eval()
     torch.onnx.export(model, input, "mmpretrain_resnet50.onnx")
 
+def get_mmpretrain_resnet50_fenshui_onnx():
+    input = torch.randn(1, 3, 224, 224)
+    model = get_model("work_dirs/resnet50_8xb32_fenshu/resnet50_8xb32_fenshu.py", pretrained="work_dirs/resnet50_8xb32_fenshu/epoch_100.pth")
+    model.eval()
+    torch.onnx.export(model, input, "mmpretrain_resnet50_fenshui.onnx")
 
 if __name__ == '__main__':
     # torchvision_resnet50_2_onnx()
     # get_mmpretrain_resnet50_model()
+    get_mmpretrain_resnet50_fenshui_onnx()
     print("return 0")

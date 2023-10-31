@@ -1089,6 +1089,8 @@ CIFAR100_CATEGORIES = (
     'trout', 'tulip', 'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf',
     'woman', 'worm')
 
+FENSHUI_CATEGORITES = ('0 - normal', '1 - lanzao', '2 - fenshui')
+
 MNIST_CATEGORITES = ('0 - zero', '1 - one', '2 - two', '3 - three', '4 - four',
                      '5 - five', '6 - six', '7 - seven', '8 - eight',
                      '9 - nine')
