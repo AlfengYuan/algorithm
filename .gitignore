@@ -25,7 +25,6 @@
 *.MOV
 *.avi
 *.data
-*.json
 *.cfg
 */*/build
 */*/*.soc
