@@ -13,6 +13,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sail/decoder_multi.h>
 #include "json.hpp"
 #include "opencv2/opencv.hpp"
 #include "ff_decode.hpp"
@@ -36,44 +37,25 @@ using namespace std;
 
 int yolov5_main(int argc, char* argv[]);
 int resnet50_main(int argc, char *argv[]);
+string getSuffix(string filename);
 
 
-const char *APP_ARG_STRING = "{config | ./cameras_multi_myself.json | path to cameras_multi.json}";
+// const char *APP_ARG_STRING = "{config | ./cameras_multi_myself.json | path to cameras_multi.json}";
 
 int main(int argc, char *argv[])
 {
-    bmlib_log_set_level(BMLIB_LOG_VERBOSE);
-
-    const char *base_keys = "{help | 0 | Print help information.}";
-    std::string keys;
-    keys = base_keys;
-    keys += APP_ARG_STRING;
-    cv::CommandLineParser parser(argc, argv, keys);
-    if(parser.get<bool>("help"))
-    {
-        parser.printMessage();
-        return 0;
-    }
-    std::string config_file = parser.get<std::string>("config");
-    
-    Config cfg(config_file.c_str());
-    if(!cfg.valid_check())
-    {
-        std::cout << "ERROR:" << config_file << " error, please check!" << std::endl;
-    }
-
-    std::vector<std::string> urls = cfg.cardUrls(0);
-    std::cout << "====================" << std::endl;
-    
-    for(auto url : urls)
-    {
-        std::cout << url << std::endl;
-    }
-    std::cout << "====================" << std::endl;
+    // bmlib_log_set_level(BMLIB_LOG_VERBOSE); 
     int ret = 0;
     // ret = yolov5_main(argc, argv);
-    // ret = resnet50_main(argc, argv);
-    return ret; 
+    ret = resnet50_main(argc, argv);
+    return ret;
+}
+
+string getSuffix(string filename)
+{
+    string res;
+    res=filename.substr(filename.find_last_of('.') + 1);//获取文件后缀
+    return  res;
 }
 
 int resnet50_main(int argc, char *argv[]) {
@@ -82,7 +64,8 @@ int resnet50_main(int argc, char *argv[]) {
     const char *keys="{input | ../../datasets/imagenet_val_1k/img | input path, image file path}"
         "{bmodel | ../../models/BM1684X/resnet50_fp32_1b.bmodel | bmodel file path}"
         "{dev_id | 0 | TPU device id}"
-        "{help | 0 | print help information.}";
+        "{help | 0 | print help information.}"
+        "{config | ./cameras_multi_myself.json | path to cameras_multi.json}";
     cv::CommandLineParser parser(argc, argv, keys);
     if (parser.get<bool>("help")) {
         parser.printMessage();  
@@ -90,6 +73,7 @@ int resnet50_main(int argc, char *argv[]) {
     }
     string bmodel_file = parser.get<string>("bmodel");
     string input = parser.get<string>("input");
+    string config = parser.get<string>("config");
     int dev_id = parser.get<int>("dev_id");
 
     // check params
@@ -98,11 +82,34 @@ int resnet50_main(int argc, char *argv[]) {
         cout << "Cannot find valid model file." << endl;
         exit(1);
     }
-    if (stat(input.c_str(), &info) != 0) {
-        cout << "Cannot find input path." << endl;
-        exit(1);
+
+    if(stat(config.c_str(), &info) != 0)
+    {
+        cout << "Cannot find config path. \n" << endl;
     }
 
+    // creat MQTTClient
+    MQTTClient client;
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    MQTTClient_message pubmsg = MQTTClient_message_initializer;
+    MQTTClient_deliveryToken token;
+    char buffer[20];
+
+    int rc = 0;
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to create client, return code %d\n", rc);
+        exit(EXIT_FAILURE);
+    }
+
+    conn_opts.keepAliveInterval = 20;
+    conn_opts.cleansession = 1;
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to connect, return code %d\n", rc);
+        exit(EXIT_FAILURE);
+    }
+    
     // creat handle
     BMNNHandlePtr handle = make_shared<BMNNHandle>(dev_id);
     cout << "set device id: "  << dev_id << endl;
@@ -128,57 +135,179 @@ int resnet50_main(int argc, char *argv[]) {
     vector<string> batch_names;
     vector<pair<int, float>> results;
     vector<json> results_json;
-    if (info.st_mode & S_IFREG) {
-        if (batch_size != 1) {
-            cout << "ERROR: batch_size of model is " << batch_size << endl;
-            exit(-1);
+    if(stat(config.c_str(), &info) == 0 && getSuffix(config).compare("json") == 0)
+    {
+        cout << "run config path" << endl;
+        Config cfg(config.c_str());
+        if(!cfg.valid_check())
+        {
+            cout << "ERROR:" << config << " error, please check!" << endl;
         }
-        ts->save("resnet overall");
-        ts->save("read image");
-        // decode jpg
-        bm_image bmimg;
-        picDec(h, input.c_str(), bmimg);
-        ts->save("read image");
-        batch_imgs.push_back(bmimg);
-        // do infer
-        CV_Assert(0 == resnet.Classify(batch_imgs, results));
-        ts->save("resnet overall");
-        bm_image_destroy(batch_imgs[0]);
-        // print the results
-        cout << input << " pred: " << results[0].first << ", score:" << results[0].second << endl;
-    }
-    else if (info.st_mode & S_IFDIR) {
-        // get files
-        vector<string> files_vector;
-        DIR *pDir;
-        struct dirent* ptr;
-        pDir = opendir(input.c_str());
-        while((ptr = readdir(pDir))!=0) {
-            if (strcmp(ptr->d_name, ".") != 0 && strcmp(ptr->d_name, "..") != 0) {
-                files_vector.push_back(input + "/" + ptr->d_name);
-            }
-        }
-        closedir(pDir);
 
-        vector<string>::iterator iter;
-        ts->save("resnet overall");
-        for (iter = files_vector.begin(); iter != files_vector.end(); iter++) {
-            string img_file = *iter;
+        std::vector<std::string> urls = cfg.cardUrls(dev_id);
+        std::vector<int> channels;
+        sail::MultiDecoder mtdecoder(1000, dev_id, 0);
+        mtdecoder.set_read_timeout(3);
+        for(string url:urls)
+        {
+            int channel = mtdecoder.add_channel(url, 15);
+            channels.push_back(channel);
+        }
+
+        while(1)
+        {
+            
+            for(int i = 0; i<urls.size(); i++)
+            {
+                batch_imgs.resize(batch_size);
+                for(int j = 0; j < batch_size; j++){
+                    int ret = mtdecoder.read_(channels[i], batch_imgs[j], 1);
+                    if(ret != 0)
+                    {
+                        sprintf(buffer, "Hello, World, %d!", 4);
+                        pubmsg.payload = buffer;
+                        pubmsg.payloadlen = (int)strlen(buffer);
+                        pubmsg.qos = QOS;
+                        pubmsg.retained = 0;
+                        if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+                        {
+                            printf("Failed to publish message, return code %d\n", rc);
+                            exit(EXIT_FAILURE);
+                        }
+                        cout << "read_ error" << urls[i] << endl;
+                    }
+                }
+                // if(flag == false){
+                //     break;
+                // }
+                // CV_Assert(0 == resnet.Classify(batch_imgs, results));
+
+                // for(int j = 0; j<batch_size; j++)
+                // {
+                    // cout << urls[i] << " pred: " << results[j].first << ", score:" << results[j].second << endl;
+                // }
+
+            }
+
+            // for(int i = 0; i<urls.size(); i++)
+            // {
+            //     sail::Decoder decoder(urls[i], true, dev_id);
+
+
+                
+
+            // }
+            // for(int i = 0; i<decoders.size(); i++)
+            // {
+            //     bm_image *img = decoders[i].grab();
+            //     if(!img)
+            //     {
+            //         batch_imgs.clear();
+            //         continue;
+            //     }
+            //     batch_imgs.push_back(*img);
+            //     if((int)batch_imgs.size() == batch_size)
+            //     {
+            //         // predict
+            //         CV_Assert(0 == resnet.Classify(batch_imgs, results));
+            //         // print and save the results
+            //         for (int i = 0; i < batch_size; i++) 
+            //         {
+            //             cout << urls[i] << " pred: " << results[i].first << ", score:" << results[i].second << endl;
+            //             if(batch_imgs[i].image_format != 0)
+            //             {
+            //                 bm_image frame;
+            //                 bm_image_create(h, batch_imgs[i].height, batch_imgs[i].width, FORMAT_YUV420P, batch_imgs[i].data_type, &frame);
+            //                 bmcv_image_storage_convert(h, 1, &batch_imgs[i], &frame);
+            //                 bm_image_destroy(batch_imgs[i]);
+            //                 batch_imgs[i] = frame;
+            //             }
+            //             bm_image_destroy(batch_imgs[i]);
+            //         }
+            //     }
+            //     batch_imgs.clear();         
+            // }
+        }
+
+    }
+    else
+    {
+        if (stat(input.c_str(), &info) != 0)
+        {
+            cout << "Cannot find input path." << endl;
+            exit(1);
+        }
+        
+        if (info.st_mode & S_IFREG) {
+            if (batch_size != 1) {
+                cout << "ERROR: batch_size of model is " << batch_size << endl;
+                exit(-1);
+            }
+            ts->save("resnet overall");
             ts->save("read image");
-            // cv::Mat img = cv::imread(img_file, cv::IMREAD_COLOR, dev_id);
+            // decode jpg
             bm_image bmimg;
-            picDec(h, img_file.c_str(), bmimg);
+            picDec(h, input.c_str(), bmimg);
             ts->save("read image");
-            size_t index = img_file.rfind("/");
-            string img_name = img_file.substr(index + 1);
             batch_imgs.push_back(bmimg);
-            batch_names.push_back(img_name);
-            if ((int)batch_imgs.size() == batch_size) {
-                // predict
+            // do infer
+            CV_Assert(0 == resnet.Classify(batch_imgs, results));
+            ts->save("resnet overall");
+            bm_image_destroy(batch_imgs[0]);
+            // print the results
+            cout << input << " pred: " << results[0].first << ", score:" << results[0].second << endl;
+        }
+        else if (info.st_mode & S_IFDIR) {
+            // get files
+            vector<string> files_vector;
+            DIR *pDir;
+            struct dirent* ptr;
+            pDir = opendir(input.c_str());
+            while((ptr = readdir(pDir))!=0) {
+                if (strcmp(ptr->d_name, ".") != 0 && strcmp(ptr->d_name, "..") != 0) {
+                    files_vector.push_back(input + "/" + ptr->d_name);
+                }
+            }
+            closedir(pDir);
+
+            vector<string>::iterator iter;
+            ts->save("resnet overall");
+            for (iter = files_vector.begin(); iter != files_vector.end(); iter++) {
+                string img_file = *iter;
+                ts->save("read image");
+                // cv::Mat img = cv::imread(img_file, cv::IMREAD_COLOR, dev_id);
+                bm_image bmimg;
+                picDec(h, img_file.c_str(), bmimg);
+                ts->save("read image");
+                size_t index = img_file.rfind("/");
+                string img_name = img_file.substr(index + 1);
+                batch_imgs.push_back(bmimg);
+                batch_names.push_back(img_name);
+                if ((int)batch_imgs.size() == batch_size) {
+                    // predict
+                    CV_Assert(0 == resnet.Classify(batch_imgs, results));
+                    // print and save the results
+                    for (int i = 0; i < batch_size; i++) {
+                        img_name = batch_names[i];
+                        cout << img_name << " pred: " << results[i].first << ", score:" << results[i].second << endl;
+                        json res_json;
+                        res_json["filename"] = img_name;
+                        res_json["prediction"] = results[i].first;
+                        res_json["score"] = results[i].second;
+                        results_json.push_back(res_json);
+                        bm_image_destroy(batch_imgs[i]);
+                    }
+                    batch_imgs.clear();
+                    batch_names.clear();
+                    results.clear();
+                }
+            }
+            if (!batch_imgs.empty()) {
                 CV_Assert(0 == resnet.Classify(batch_imgs, results));
                 // print and save the results
-                for (int i = 0; i < batch_size; i++) {
-                    img_name = batch_names[i];
+                for (int i = 0; i < batch_imgs.size(); i++) 
+                {
+                    string img_name = batch_names[i];
                     cout << img_name << " pred: " << results[i].first << ", score:" << results[i].second << endl;
                     json res_json;
                     res_json["filename"] = img_name;
@@ -189,54 +318,35 @@ int resnet50_main(int argc, char *argv[]) {
                 }
                 batch_imgs.clear();
                 batch_names.clear();
-                results.clear();
+                results.clear();     
             }
-        }
-        if (!batch_imgs.empty()) {
-            CV_Assert(0 == resnet.Classify(batch_imgs, results));
-            // print and save the results
-            for (int i = 0; i < batch_imgs.size(); i++) 
+            ts->save("resnet overall");
+
+            // save the results to the txt file
+            if (access("results", 0) != F_OK) 
             {
-                string img_name = batch_names[i];
-                cout << img_name << " pred: " << results[i].first << ", score:" << results[i].second << endl;
-                json res_json;
-                res_json["filename"] = img_name;
-                res_json["prediction"] = results[i].first;
-                res_json["score"] = results[i].second;
-                results_json.push_back(res_json);
-                bm_image_destroy(batch_imgs[i]);
+                mkdir("results", S_IRWXU);
             }
-            batch_imgs.clear();
-            batch_names.clear();
-            results.clear();     
+            size_t index = input.rfind("/");
+            if(index == input.length() - 1)
+            {
+                input = input.substr(0, input.length() - 1);
+                index = input.rfind("/");
+            }
+            string dataset_name = input.substr(index + 1);
+            index = bmodel_file.rfind("/");
+            string model_name = bmodel_file.substr(index + 1);
+            string json_file = "results/" + model_name + "_" + dataset_name + "_bmcv_cpp" + "_result.json";
+            cout << "================" << endl;
+            cout << "result saved in " << json_file << endl;
+            ofstream(json_file) << std::setw(4) << results_json;
         }
-        ts->save("resnet overall");
-
-        // save the results to the txt file
-        if (access("results", 0) != F_OK) 
+        else
         {
-            mkdir("results", S_IRWXU);
+            cout << "Is not a valid path: " << input << endl;
+            exit(1);
         }
-        size_t index = input.rfind("/");
-        if(index == input.length() - 1)
-        {
-            input = input.substr(0, input.length() - 1);
-            index = input.rfind("/");
-        }
-        string dataset_name = input.substr(index + 1);
-        index = bmodel_file.rfind("/");
-        string model_name = bmodel_file.substr(index + 1);
-        string json_file = "results/" + model_name + "_" + dataset_name + "_bmcv_cpp" + "_result.json";
-        cout << "================" << endl;
-        cout << "result saved in " << json_file << endl;
-        ofstream(json_file) << std::setw(4) << results_json;
     }
-    else
-    {
-        cout << "Is not a valid path: " << input << endl;
-        exit(1);
-    }
-
     // print speed
     time_stamp_t base_time = time_point_cast<microseconds>(steady_clock::now());
     resnet_ts.calbr_basetime(base_time);
