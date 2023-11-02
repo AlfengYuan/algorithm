@@ -202,7 +202,8 @@ int RESNET::pre_process(vector<bm_image> &images) {
     auto ret = bmcv_image_vpp_convert_padding(m_bmContext->handle(), 1, image_aligned, &m_resized_imgs[i],
         &padding_attr, &crop_rect);
 #else
-    auto ret = bmcv_image_vpp_convert(m_bmContext->handle(), 1, images[i], &m_resized_imgs[i]);
+    auto ret = bmcv_image_vpp_convert(m_bmContext->handle(), 1, image_aligned, &m_resized_imgs[i]);
+    // auto ret = bmcv_image_vpp_convert(m_bmContext->handle(), 1, images[i], &m_resized_imgs[i]);
 #endif
     assert(BM_SUCCESS == ret);
 

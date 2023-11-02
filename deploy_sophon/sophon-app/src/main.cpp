@@ -23,7 +23,6 @@
 #include "MQTTClient.h"
 #include "configuration.h"
 
-
 using json = nlohmann::json;
 using namespace std;
 #define USE_OPENCV_DECODE 0
@@ -42,10 +41,11 @@ string getSuffix(string filename);
 
 // const char *APP_ARG_STRING = "{config | ./cameras_multi_myself.json | path to cameras_multi.json}";
 
-int main(int argc, char *argv[])
+int main_old(int argc, char *argv[])
 {
     // bmlib_log_set_level(BMLIB_LOG_VERBOSE); 
     int ret = 0;
+
     // ret = yolov5_main(argc, argv);
     ret = resnet50_main(argc, argv);
     return ret;
@@ -156,9 +156,10 @@ int resnet50_main(int argc, char *argv[]) {
 
         while(1)
         {
-            
+            bool flag = true;
             for(int i = 0; i<urls.size(); i++)
             {
+                flag = true;
                 batch_imgs.resize(batch_size);
                 for(int j = 0; j < batch_size; j++){
                     int ret = mtdecoder.read_(channels[i], batch_imgs[j], 1);
@@ -174,18 +175,37 @@ int resnet50_main(int argc, char *argv[]) {
                             printf("Failed to publish message, return code %d\n", rc);
                             exit(EXIT_FAILURE);
                         }
-                        cout << "read_ error" << urls[i] << endl;
+                        flag = false;
+                        break;
                     }
                 }
-                // if(flag == false){
-                //     break;
-                // }
-                // CV_Assert(0 == resnet.Classify(batch_imgs, results));
 
-                // for(int j = 0; j<batch_size; j++)
-                // {
-                    // cout << urls[i] << " pred: " << results[j].first << ", score:" << results[j].second << endl;
-                // }
+                if(!flag) continue;
+
+                bm_image packed_img;
+                // int packed_stride = 1018;
+                bm_image_create(h, 1080, 1920, FORMAT_BGR_PACKED, DATA_TYPE_EXT_1N_BYTE, &packed_img, NULL);
+                if(bmcv_image_vpp_convert(h, 1, batch_imgs[0], &packed_img, NULL) != BM_SUCCESS)
+                {
+                    cout << "+++++++++++++++++++++++++++++" << endl;
+                    cout << "bmcv_image_vpp_convert failed!!!!!!!!!" << endl;
+                    cout << "++++++++++++++++++++++++++++++" << endl;
+                }
+
+
+                cout << "===================" << endl;
+                cout << "bmimg::weidth::" << batch_imgs[0].width << endl;
+                cout << "bmimg::height::" << batch_imgs[0].height << endl;
+                cout << "bmimg::image_format::" << batch_imgs[0].image_format << endl;
+                cout << "bmimg::data_type::" << batch_imgs[0].data_type << endl;
+                cout << "===================" << endl;
+
+                CV_Assert(0 == resnet.Classify(batch_imgs, results));
+
+                for(int j = 0; j<batch_size; j++)
+                {
+                    cout << urls[i] << " pred: " << results[j].first << ", score:" << results[j].second << endl;
+                }
 
             }
 
@@ -248,8 +268,19 @@ int resnet50_main(int argc, char *argv[]) {
             // decode jpg
             bm_image bmimg;
             picDec(h, input.c_str(), bmimg);
+
+            // int stride = 0;
+            // bm_image_get_stride(bmimg, &stride);
+            // cout << "++++++++++++++++++++++++++" << endl;
+            // cout << "stride: " << stride << endl;
+            // cout << "++++++++++++++++++++++++++" << endl;
             ts->save("read image");
             batch_imgs.push_back(bmimg);
+
+            cout << "===================" << endl;
+            cout << "bmimg::image_format::" << bmimg.image_format << endl;
+            cout << "bmimg::data_type::" << bmimg.data_type << endl;
+            cout << "===================" << endl;
             // do infer
             CV_Assert(0 == resnet.Classify(batch_imgs, results));
             ts->save("resnet overall");
@@ -563,6 +594,7 @@ int yolov5_main(int argc, char* argv[]) {
                     if(flag == false){
                         break;
                     }
+
                     CV_Assert(0 == yolov5.Detect(batch_imgs, boxes));
                     for (int i = 0; i < batch_size; i++) { //use real batch size
                         cout << ++id << ", det_nums: " << boxes[i].size() << endl;
