@@ -123,15 +123,15 @@ bool inference(
 
     //postprocess
     auto result = postprocessor.process(output);
-        // print result
 
     // debug yyf
-    for(int i = 0; i<3; i++)
-    {
-        std::cout << output[i] << ", ";
-    }
-    std::cout << std::endl;
+    // for(int i = 0; i<3; i++)
+    // {
+    //     std::cout << output[i] << ", ";
+    // }
+    // std::cout << std::endl;
     // debug yyf
+    // print result
     for (auto item : result) {
         spdlog::info("Top 3 of in thread {} on tpu {}: [{}]", 1, engine.get_device_id(), fmt::join(item, ", "));
     }
@@ -147,7 +147,7 @@ bool inference(
     return status;
 }
 
-int main(int argc, char *argv[]){
+int main_resnet50_sail(int argc, char *argv[]){
     //read params 
     if (argc < 3) {
         cout << "USAGE:" << endl;
