@@ -27,6 +27,24 @@ You may obtain a copy of the License at
 
 using namespace std;
 
+
+enum class SQSY
+{
+    NORMAL,
+    YELLO_WARN,
+    RED_WARN,
+    INTERNET_WARN,
+    SQSY_MAX
+};
+
+typedef class Cameras
+{
+public:
+    string rtsp;
+    SQSY state;
+    string addres;
+}Cameras;
+
 /**
  * @brief Load a bmodel and do inference.
  *
@@ -41,7 +59,7 @@ bool inference(
     const std::string& bmodel_path,
     const std::string& input_path,
     int                tpu_id,
-    int*               out_value){
+    SQSY*               out_value){
     // init Engine
     sail::Engine engine(tpu_id);    
 
@@ -146,7 +164,7 @@ bool inference(
         spdlog::info("Top 3 of in thread {} on tpu {}: [{}]", input_path, engine.get_device_id(), fmt::join(item, ", "));
     }
 
-    *out_value =  result[0][0];
+    *out_value =  SQSY(result[0][0]);
 
     // free data
     if (input_dtype != BM_FLOAT32) {
@@ -159,21 +177,16 @@ bool inference(
     return status;
 }
 
-typedef struct Cameras
-{
-    string rtsp;
-    int state;
-    string addres;
-}Cameras;
-
-
 
 int main(int argc, char *argv[]){
     //read params 
     if (argc < 3) {
-        cout << "USAGE:" << endl;
-        cout << "  " << argv[0] << " <image path> <bmodel path> <device id>\n" << endl;
-        exit(1);
+        // cout << "USAGE:" << endl;
+        // cout << "  " << argv[0] << " <image path> <bmodel path> <device id>\n" << endl;
+        // exit(1);
+        argv[1] = "configs.json";
+        argv[2] = "resnet50_int8_1b.bmodel";
+        argv[3] = "0";
     }
     std::string input_path(argv[1]);
     std::string bmodel_path(argv[2]);
@@ -213,7 +226,7 @@ int main(int argc, char *argv[]){
         string key = *it;
         camera.addres = key;
         camera.rtsp = root["cameras"][key]["rtsp"].asString();
-        camera.state = root["cameras"][key]["state"].asInt();
+        camera.state = SQSY(root["cameras"][key]["state"].asInt());
         mycameras.push_back(camera);
     }
 
@@ -237,17 +250,36 @@ int main(int argc, char *argv[]){
         for(size_t i = 0; i<mycameras.size(); i++)
         {
             string input_path = mycameras[i].rtsp;
-            int out_value = -1;
-            status = inference(bmodel_path, input_path, tpu_id, &out_value);
-            cout << "output: " << out_value << endl;
+            SQSY state = mycameras[i].state;
+            SQSY out_state = SQSY::INTERNET_WARN; // 0 normal 1 yello warning 2 red warning 3 internet warning
+            try{
+                status = inference(bmodel_path, input_path, tpu_id, &out_state);
+            }
+            catch(runtime_error &e)
+            {
+                assert(out_state == SQSY::INTERNET_WARN);
+            }
+
+            if(out_state == state) continue;
+
+            mycameras[i].state = out_state;
+
+            if(mycameras[i].state == SQSY::NORMAL) continue;
+
+            // MQTTMessage publish
+            cout << "=====================" << endl;
+            cout << "output: " << int(out_state) << endl;
+            cout << "=====================" << endl;
         }
     }
+
+
     // bool status = inference(bmodel_path, input_path, tpu_id);
-    if (status){
-        return 0;
-    }else{
-        return 1;
-    }
+    // if (status){
+    //     return 0;
+    // }else{
+    //     return 1;
+    // }
 
     return 0;
 }

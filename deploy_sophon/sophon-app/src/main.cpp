@@ -41,7 +41,7 @@ string getSuffix(string filename);
 
 // const char *APP_ARG_STRING = "{config | ./cameras_multi_myself.json | path to cameras_multi.json}";
 
-int main_old(int argc, char *argv[])
+int main_main(int argc, char *argv[])
 {
     // bmlib_log_set_level(BMLIB_LOG_VERBOSE); 
     int ret = 0;
