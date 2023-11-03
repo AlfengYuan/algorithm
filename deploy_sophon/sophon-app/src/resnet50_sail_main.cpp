@@ -15,6 +15,15 @@ You may obtain a copy of the License at
 ==============================================================================*/
 
 #include "processor.h"
+#include "json/json.h"
+
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__MSC_VER)
+#pragma warning(disable: 4996)
+#endif
 
 using namespace std;
 
@@ -31,7 +40,8 @@ using namespace std;
 bool inference(
     const std::string& bmodel_path,
     const std::string& input_path,
-    int                tpu_id){
+    int                tpu_id,
+    int*               out_value){
     // init Engine
     sail::Engine engine(tpu_id);    
 
@@ -133,8 +143,10 @@ bool inference(
     // debug yyf
     // print result
     for (auto item : result) {
-        spdlog::info("Top 3 of in thread {} on tpu {}: [{}]", 1, engine.get_device_id(), fmt::join(item, ", "));
+        spdlog::info("Top 3 of in thread {} on tpu {}: [{}]", input_path, engine.get_device_id(), fmt::join(item, ", "));
     }
+
+    *out_value =  result[0][0];
 
     // free data
     if (input_dtype != BM_FLOAT32) {
@@ -147,7 +159,16 @@ bool inference(
     return status;
 }
 
-int main_resnet50_sail(int argc, char *argv[]){
+typedef struct Cameras
+{
+    string rtsp;
+    int state;
+    string addres;
+}Cameras;
+
+
+
+int main(int argc, char *argv[]){
     //read params 
     if (argc < 3) {
         cout << "USAGE:" << endl;
@@ -159,12 +180,74 @@ int main_resnet50_sail(int argc, char *argv[]){
     cout << "bmodel file: " << bmodel_path << endl;
     
     int tpu_id = atoi(argv[3]);
+    assert(tpu_id == 0);
 
+    vector<struct Cameras> mycameras; 
+
+    //parser json config<image path>
+    Json::Reader reader;
+    Json::Value root;
+    Json::Value::Members members;
+    ifstream ifs;
+    ifs.open(input_path);
+    if(!ifs.is_open())
+    {
+        cout << "open " << input_path << "error." << endl;
+        return -1;
+    }
+
+    if(!reader.parse(ifs, root))
+    {
+        cout << "parser " << input_path << "error." << endl;
+        return -1;
+    }
+
+    if(root.isMember("cameras"))
+    {
+        members = root["cameras"].getMemberNames();
+    }
+
+    for(Json::Value::Members::iterator it = members.begin(); it != members.end(); it++)
+    {
+        struct Cameras camera;
+        string key = *it;
+        camera.addres = key;
+        camera.rtsp = root["cameras"][key]["rtsp"].asString();
+        camera.state = root["cameras"][key]["state"].asInt();
+        mycameras.push_back(camera);
+    }
+
+    // cout << "=====================" << endl;
+    // for(size_t i = 0; i<mycameras.size(); i++)
+    // {
+    //     cout << "camera: " << i << endl;
+    //     cout << "rtsp:" << mycameras[i].rtsp << endl;
+    //     cout << "addres:" << mycameras[i].addres << endl;
+    //     cout << "state:" << mycameras[i].state << endl;
+    //     cout << endl;
+    // }
+    // cout << "======================" << endl;
+
+
+
+    bool status = true;
     //load bmodel and do inference
-    bool status = inference(bmodel_path, input_path, tpu_id);
+    while(1)
+    {
+        for(size_t i = 0; i<mycameras.size(); i++)
+        {
+            string input_path = mycameras[i].rtsp;
+            int out_value = -1;
+            status = inference(bmodel_path, input_path, tpu_id, &out_value);
+            cout << "output: " << out_value << endl;
+        }
+    }
+    // bool status = inference(bmodel_path, input_path, tpu_id);
     if (status){
         return 0;
     }else{
         return 1;
     }
+
+    return 0;
 }

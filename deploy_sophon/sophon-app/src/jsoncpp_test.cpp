@@ -148,7 +148,7 @@ int readjson2()
     {
         members = root["cameras"].getMemberNames();
     }
-    
+
     for(Json::Value::Members::iterator it = members.begin(); it != members.end(); it++)
     {
         string key = *it;
@@ -159,7 +159,7 @@ int readjson2()
 
 }
 
-int main()
+int main_json_cpp_test()
 {
     // createjson2();
     // readjson();
