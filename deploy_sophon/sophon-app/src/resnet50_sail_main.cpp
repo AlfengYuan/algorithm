@@ -17,6 +17,8 @@ You may obtain a copy of the License at
 #include "processor.h"
 #include "json/json.h"
 #include "MQTTClient.h"
+#include <ctime>
+#include <iostream>
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -34,6 +36,8 @@ You may obtain a copy of the License at
 
 using namespace std;
 
+const std::vector<std::vector<int>> colors = {{255, 255, 255},  {255, 255, 0},    {255, 0, 0},   {0, 0, 0}};
+const std::vector<std::string> m_class_names = {"Normal", "Yello Warning", "Red Warning", "Network Error"};
 
 enum class SQSY
 {
@@ -52,7 +56,9 @@ public:
     string addres;
 }Cameras;
 
-int MQTT_PubMessage(Cameras &camera)
+
+
+int MQTT_PubMessage(Cameras &camera, string &timesnap)
 {
 
     // creat MQTTClient
@@ -77,7 +83,7 @@ int MQTT_PubMessage(Cameras &camera)
         exit(EXIT_FAILURE);
     }
 
-    sprintf(buffer, "{\"address\":%s, \"state\": %d}", camera.addres.c_str(), int(camera.state));
+    sprintf(buffer, "{\"address\":%s, \"state\": %d, \"time\":%s}", camera.addres.c_str(), int(camera.state), timesnap.c_str());
     pubmsg.payload = buffer;
     pubmsg.payloadlen = (int)strlen(buffer);
     pubmsg.qos = QOS;
@@ -116,7 +122,8 @@ bool inference(
     const std::string& bmodel_path,
     const std::string& input_path,
     int                tpu_id,
-    SQSY*               out_value){
+    SQSY*              out_value,
+    string&            out_timesnap){
     // init Engine
     sail::Engine engine(tpu_id);    
 
@@ -175,7 +182,7 @@ bool inference(
     // init decoder.
     sail::Decoder decoder(input_path, true, tpu_id);
     bool status = true;
-    
+
     // read an image from a image file or a video file
     sail::BMImage img0;
     int ret = decoder.read(handle, img0);
@@ -183,7 +190,7 @@ bool inference(
         cout<<"Finished to read the video!"<<endl;
         return false;
     }
-        
+
     // preprocess
     sail::BMImage img1(handle, input_shape[2], input_shape[3],
                     FORMAT_BGR_PLANAR, img_dtype);
@@ -209,19 +216,25 @@ bool inference(
     //postprocess
     auto result = postprocessor.process(output);
 
-    // debug yyf
-    // for(int i = 0; i<3; i++)
-    // {
-    //     std::cout << output[i] << ", ";
-    // }
-    // std::cout << std::endl;
-    // debug yyf
-    // print result
     for (auto item : result) {
         spdlog::info("Top 3 of in thread {} on tpu {}: [{}]", input_path, engine.get_device_id(), fmt::join(item, ", "));
     }
 
     *out_value =  SQSY(result[0][0]);
+
+
+    //save BMImage
+    // int colors_num = colors.size();
+    // auto color_tuple = std::make_tuple(colors[result[0][0]%colors_num][2], colors[result[0][0]%colors_num][1], 
+    //                                     colors[result[0][0]%colors_num][0]);
+    // string label = m_class_names[result[0][0]];
+
+    // if(BM_SUCCESS != bmcv.putText(img0, label, 400, 400, color_tuple, 2, 2)) // only support YUV420P, puttext not used here.
+    // {
+    //     std::cout << "bmcv put text error !!!" << std::endl;
+    // }
+
+    bmcv.imwrite("./results/images/" + out_timesnap + ".jpg" , img0);
 
     // free data
     if (input_dtype != BM_FLOAT32) {
@@ -252,7 +265,13 @@ int main(int argc, char *argv[]){
     int tpu_id = atoi(argv[3]);
     assert(tpu_id == 0);
 
-    vector<struct Cameras> mycameras; 
+    vector<struct Cameras> mycameras;
+
+    // creat save path
+    if (access("results", 0) != F_OK)
+        mkdir("results", S_IRWXU);
+    if (access("results/images", 0) != F_OK)
+        mkdir("results/images", S_IRWXU); 
 
     //parser json config<image path>
     Json::Reader reader;
@@ -306,11 +325,24 @@ int main(int argc, char *argv[]){
     {
         for(size_t i = 0; i<mycameras.size(); i++)
         {
+
+            //get timesnap
+            time_t rawtime;
+            struct tm *timeinfo;
+            char timebuffer[20];
+            time(&rawtime);
+            timeinfo = localtime(&rawtime);
+            // strftime(timebuffer, sizeof(timebuffer), "%Y-%m-%d_%H:%M:%S", timeinfo);
+            strftime(timebuffer, sizeof(timebuffer), "%Y%m%d%H%M%S", timeinfo);
+            string out_timesnap = timebuffer;
+
             string input_path = mycameras[i].rtsp;
             SQSY state = mycameras[i].state;
             SQSY out_state = SQSY::INTERNET_WARN; // 0 normal 1 yello warning 2 red warning 3 internet warning
+
+            sail::BMImage out_bmimage;
             try{
-                status = inference(bmodel_path, input_path, tpu_id, &out_state);
+                status = inference(bmodel_path, input_path, tpu_id, &out_state, out_timesnap);
             }
             catch(runtime_error &e)
             {
@@ -323,8 +355,13 @@ int main(int argc, char *argv[]){
 
             if(mycameras[i].state == SQSY::NORMAL) continue;
 
+            // mycameras[i].timesnap = out_timesnap;
+
             // MQTTMessage publish
-            MQTT_PubMessage(mycameras[i]);
+            MQTT_PubMessage(mycameras[i], out_timesnap);
+
+            // image2cloud
+            //TODO:
         }
     }
 
