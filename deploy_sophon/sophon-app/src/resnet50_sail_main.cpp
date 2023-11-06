@@ -334,7 +334,7 @@ int main(int argc, char *argv[]){
             timeinfo = localtime(&rawtime);
             // strftime(timebuffer, sizeof(timebuffer), "%Y-%m-%d_%H:%M:%S", timeinfo);
             strftime(timebuffer, sizeof(timebuffer), "%Y%m%d%H%M%S", timeinfo);
-            string out_timesnap = timebuffer;
+            string out_timesnap = timebuffer+mycameras[i].addres;
 
             string input_path = mycameras[i].rtsp;
             SQSY state = mycameras[i].state;
