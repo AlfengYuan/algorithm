@@ -249,7 +249,7 @@ bool inference(
 }
 
 
-int main(int argc, char *argv[]){
+int main_resnet50_sail(int argc, char *argv[]){
     //read params 
     if (argc < 3) {
         // cout << "USAGE:" << endl;
