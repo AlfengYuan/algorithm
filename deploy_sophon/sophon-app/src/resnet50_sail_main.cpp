@@ -19,6 +19,7 @@ You may obtain a copy of the License at
 #include "MQTTClient.h"
 #include <ctime>
 #include <iostream>
+#include <curl/curl.h>
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
