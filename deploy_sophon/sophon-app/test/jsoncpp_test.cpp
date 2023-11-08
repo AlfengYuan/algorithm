@@ -159,7 +159,7 @@ int readjson2()
 
 }
 
-int main_json_cpp_test()
+int main()
 {
     // createjson2();
     // readjson();

@@ -47,15 +47,6 @@ include_directories("${JSONCPP_PATH}/include")
 link_directories("${JSONCPP_PATH}/lib")
 set(JSONCPPLIBS jsoncpp)
 
-message("CURL_PATH: ${CURL_PATH}")
-include_directories("${CURL_PATH}/include")
-link_directories("${CURL_PATH}/lib")
-set(CURLLIBS curl)
-
-message("SSL_PATH: ${SSL_PATH}")
-include_directories("${SSL_PATH}/include")
-link_directories("${SSL_PATH}/lib")
-set(SSLLIBS ssl)
 
 add_compile_definitions(USE_BMCV=1)
 add_compile_definitions(USE_FFMPEG=1)
@@ -64,4 +55,4 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 aux_source_directory(./src SRC_FILES)
 
 add_executable(sophon-app.soc ${SRC_FILES})
-target_link_libraries(sophon-app.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} ${JSONCPPLIBS} ${SSLLIBS} ${CURLLIBS} -lpthread -lavcodec -lavformat -lavutil -lbmcv)
+target_link_libraries(sophon-app.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} ${JSONCPPLIBS} -lpthread -lavcodec -lavformat -lavutil -lbmcv)

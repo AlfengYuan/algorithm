@@ -16,7 +16,7 @@ void md5_hash(const char *input, char *output) {
     }
 }
  
-int main_md5_hash() {
+int main() {
     const char *input = "Hello, MD5!";
     char md5_result[MD5_DIGEST_LENGTH * 2 + 1]; // +1 for null-terminator
  
