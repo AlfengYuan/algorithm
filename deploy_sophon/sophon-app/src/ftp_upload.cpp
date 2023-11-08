@@ -24,7 +24,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <curl/curl.h>
+extern "C"
+{
+  #include <curl/curl.h>
+}
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -45,7 +48,7 @@
 #define LOCAL_FILE      "canvas2.png"
 #define UPLOAD_FILE_AS  "while-uploading.png"
 // #define REMOTE_URL      "ftp://example.com/"  UPLOAD_FILE_AS
-#define REMOTE_URL      "ftp://ftpuser:ftpuser@192.168.150.99/" UPLOAD_FILE_AS
+#define REMOTE_URL      "ftp://ftpuser:ftpuser@192.168.150.99/ftpdir/" UPLOAD_FILE_AS
 // #define RENAME_FILE_TO  "renamed-and-fine.txt"
 #define RENAME_FILE_TO   "renamed-and-file.png"
 

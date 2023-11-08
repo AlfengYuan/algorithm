@@ -4,9 +4,9 @@ project(sophon-app)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 set(CMAKE_BUILD_TYPE "Debug")
-add_compile_options(-Wall -Wextra -pedantic -Werror -fpermissive)
+add_compile_options(-Wall -Wextra -fpermissive)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O3")
-add_definitions(-w)
+#add_definitions(-w)
 
 set(TARGET_ARCH soc)
 set(SDK ${PROJECT_SOURCE_DIR}/3rdparty/soc-sdk)
@@ -64,4 +64,4 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 aux_source_directory(./src SRC_FILES)
 
 add_executable(sophon-app.soc ${SRC_FILES})
-target_link_libraries(sophon-app.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} ${JSONCPPLIBS} ${CURLLIBS} ${SSLLIBS} -lpthread -lavcodec -lavformat -lavutil -lbmcv)
+target_link_libraries(sophon-app.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} ${JSONCPPLIBS} ${SSLLIBS} ${CURLLIBS} -lpthread -lavcodec -lavformat -lavutil -lbmcv)
