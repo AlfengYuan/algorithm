@@ -19,6 +19,14 @@ You may obtain a copy of the License at
 #include "MQTTClient.h"
 #include <ctime>
 #include <iostream>
+#include "base64.hpp"
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <algorithm>
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -32,7 +40,7 @@ You may obtain a copy of the License at
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         2
-#define TIMEOUT     10000L
+#define TIMEOUT     1000000L
 
 using namespace std;
 
@@ -58,7 +66,7 @@ public:
 
 
 
-int MQTT_PubMessage(Cameras &camera, string &timesnap)
+int MQTT_PubMessage(Cameras &camera, string &timesnap, string &base64_img)
 {
 
     // creat MQTTClient
@@ -66,13 +74,14 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap)
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
-    char buffer[200];
+    char buffer[350000];
 
     int rc = 0;
     if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to create client, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        return 0;
     }
 
     conn_opts.keepAliveInterval = 20;
@@ -80,10 +89,11 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap)
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        return 0;
     }
 
-    sprintf(buffer, "{\"address\":%s, \"state\": %d, \"time\":%s}", camera.addres.c_str(), int(camera.state), timesnap.c_str());
+    sprintf(buffer, "{\"address\":%s, \"state\": %d, \"time\":%s, \"data\":%s}", camera.addres.c_str(), int(camera.state), timesnap.c_str(), base64_img.c_str());
     pubmsg.payload = buffer;
     pubmsg.payloadlen = (int)strlen(buffer);
     pubmsg.qos = QOS;
@@ -91,7 +101,8 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap)
     if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to publish message, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        return 0;
     }
 
     printf("Waiting for up to %d seconds for publication of %s\n"
@@ -356,9 +367,23 @@ int main(int argc, char *argv[]){
             if(mycameras[i].state == SQSY::NORMAL) continue;
 
             // mycameras[i].timesnap = out_timesnap;
+            string jpg_name = "results/images/" + out_timesnap + ".jpg";
+            cout << "jpgname: " << jpg_name << endl;
+
+            //encode base64
+            std::ifstream fin(jpg_name, std::ios::binary);
+            fin.seekg(0, ios::end);
+            int iSize = fin.tellg();
+            char* szBuf = new (std::nothrow) char[iSize];
+        
+            fin.seekg(0, ios::beg);
+            fin.read(szBuf, sizeof(char) * iSize);
+            fin.close();
+
+            string base64_img = base64_encode(szBuf, iSize);
 
             // MQTTMessage publish
-            MQTT_PubMessage(mycameras[i], out_timesnap);
+            MQTT_PubMessage(mycameras[i], out_timesnap, base64_img);
 
             // image2cloud
             //TODO:
