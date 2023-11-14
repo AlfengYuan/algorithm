@@ -11,7 +11,8 @@ import face_recognition
 import pdb
 import gevent
 from gevent import pywsgi
-
+import json
+import base64
 app = Flask(__name__)
 projects = {"cjjb"}
 
@@ -22,18 +23,22 @@ def face_encode(project):
     if request.method != 'POST':
         return
 
-    result = {}
-    if request.files.get('image'):
-        im_file = request.files['image']
-        im_bytes = im_file.read()
+    result_dict = {}
+    if request.json.get('image'):
+        im_bytes = base64.b64decode(request.json['image'].encode("utf-8"))
+        # im_bytes = im_file.read()
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
         if project in projects:
             # pdb.set_trace()
             features = list(face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=1,
                                                             model='large')[0])
-            result["feature"] = features
-
-    return result
+            result_dict['feature'] = features
+            result_json = json.dumps(result_dict)
+            return result_json
+        else:
+            return json.dumps({"error": "project error"})
+    else:
+        return json.dumps({"error": "request.json.get('image') error, params error"})
 
 @app.route("/my_fcn")
 def my_fcn():
