@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import face_recognition
 import pdb
+import gevent
+from gevent import pywsgi
 
 app = Flask(__name__)
 projects = {"cjjb"}
@@ -25,16 +27,13 @@ def face_encode(project):
         im_file = request.files['image']
         im_bytes = im_file.read()
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
-
-        print(type(im))
-
         if project in projects:
             # pdb.set_trace()
-            features = list(face_recognition.face_encodings(im)[0])
+            features = list(face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=1,
+                                                            model='large')[0])
             result["feature"] = features
 
     return result
-
 
 @app.route("/my_fcn")
 def my_fcn():
@@ -47,6 +46,7 @@ def print_hi(name):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6008)
-
+    # app.run(host='0.0.0.0', port=6008)
+    server = pywsgi.WSGIServer(('0.0.0.0', 6008), app)
+    server.serve_forever()
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
