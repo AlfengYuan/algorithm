@@ -58,10 +58,12 @@ def face_compare(project):
             if len(a_single_unknow_face_encoding) <= 0:
                 return {"error": "not find face in image"}
 
-            distances_index = str(face_recognition.face_distance(list_of_face_encodings,
-                                                                 a_single_unknow_face_encoding[0]).argmin())
-
-            return distances_index
+            distances = face_recognition.face_distance(list_of_face_encodings, a_single_unknow_face_encoding[0])
+            index = distances.argmin()
+            if distances[index] < 0.4:
+                return str(index)
+            else:
+                return "-1"
         else:
             return {"error": "not support {}".format(project)}
     else:
@@ -95,8 +97,6 @@ def upload(project):
             return {"error": "not support {}".format(project)}
     else:
         return {"error": "not right image data, please use json type"}
-
-
 
 
 def print_hi(name):

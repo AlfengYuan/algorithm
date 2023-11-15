@@ -11,9 +11,9 @@ import requests
 # DETECTION_URL = 'http://localhost:6008/face-encode/cjjb'
 DETECTION_URL = 'http://localhost:6008/face-compare/cjjb'
 # IMAGE = 'zidane.jpg'
-# IMAGE = '20200908221516829.png'
+IMAGE = '20200908221516829.png'
 # IMAGE = "/home/yyf/Documents/PycharmProjects/yolov5/utils/flask_rest_api/vlcsnap-2023-11-14-14h18m20s882.png"
-IMAGE = "26ed6088dd203bbd7023a64fb263d251.png"
+# IMAGE = "26ed6088dd203bbd7023a64fb263d251.png"
 # Read image
 with open(IMAGE, 'rb') as f:
     image_data = base64.b64encode(f.read()).decode("utf-8")
