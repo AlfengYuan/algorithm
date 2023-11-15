@@ -14,6 +14,9 @@ You may obtain a copy of the License at
 
 ==============================================================================*/
 
+#ifndef PROCESSOR_H
+#define PROCESSOR_H
+
 #ifdef _WIN32
 #include "getopt_win.h"
 #else
@@ -38,8 +41,6 @@ You may obtain a copy of the License at
 #include <cvwrapper.h>
 #include <engine.h>
 #include <tensor.h>
-
-
 
 
 class PreProcessor {
@@ -139,3 +140,5 @@ class PostProcessor {
   size_t class_num_;
   size_t top_k_;
 };
+
+#endif

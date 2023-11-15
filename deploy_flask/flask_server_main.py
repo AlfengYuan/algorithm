@@ -21,7 +21,7 @@ FACE_ENCODE_URL = '/face-encode/<project>'
 @app.route(FACE_ENCODE_URL, methods=['POST'])
 def face_encode(project):
     if request.method != 'POST':
-        return
+        return {"error": "request method only support POST"}
 
     result_dict = {}
     if request.json.get('image'):
@@ -30,15 +30,18 @@ def face_encode(project):
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
         if project in projects:
             # pdb.set_trace()
-            features = list(face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=1,
-                                                            model='large')[0])
-            result_dict['feature'] = features
+            features = face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=1,
+                                                            model='large')
+            if len(features) <= 0:
+                return {"error": "not find face in image"}
+
+            result_dict['feature'] = list(features[0])
             result_json = json.dumps(result_dict)
             return result_json
         else:
-            return json.dumps({"error": "project error"})
+            return {"error": "not supoort {}".format(project)}
     else:
-        return json.dumps({"error": "request.json.get('image') error, params error"})
+        return {"error": "not right image data, please use json type"}
 
 @app.route("/my_fcn")
 def my_fcn():

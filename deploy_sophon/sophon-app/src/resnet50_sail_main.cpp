@@ -66,7 +66,7 @@ public:
 
 
 
-int MQTT_PubMessage(Cameras &camera, string &timesnap, string &base64_img)
+int MQTT_PubMessage(Cameras &camera, string &timesnap)
 {
 
     // creat MQTTClient
@@ -74,7 +74,7 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap, string &base64_img)
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
-    char buffer[350000];
+    char buffer[200];
 
     int rc = 0;
     if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
@@ -93,7 +93,7 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap, string &base64_img)
         return 0;
     }
 
-    sprintf(buffer, "{\"address\":%s, \"state\": %d, \"time\":%s, \"data\":%s}", camera.addres.c_str(), int(camera.state), timesnap.c_str(), base64_img.c_str());
+    sprintf(buffer, "{\"address\":%s, \"state\": %d, \"time\":%s}", camera.addres.c_str(), int(camera.state), timesnap.c_str());
     pubmsg.payload = buffer;
     pubmsg.payloadlen = (int)strlen(buffer);
     pubmsg.qos = QOS;
@@ -371,19 +371,21 @@ int main(int argc, char *argv[]){
             cout << "jpgname: " << jpg_name << endl;
 
             //encode base64
-            std::ifstream fin(jpg_name, std::ios::binary);
-            fin.seekg(0, ios::end);
-            int iSize = fin.tellg();
-            char* szBuf = new (std::nothrow) char[iSize];
+            // std::ifstream fin(jpg_name, std::ios::binary);
+            // fin.seekg(0, ios::end);
+            // int iSize = fin.tellg();
+            // char* szBuf = new (std::nothrow) char[iSize];
         
-            fin.seekg(0, ios::beg);
-            fin.read(szBuf, sizeof(char) * iSize);
-            fin.close();
+            // fin.seekg(0, ios::beg);
+            // fin.read(szBuf, sizeof(char) * iSize);
+            // fin.close();
 
-            string base64_img = base64_encode(szBuf, iSize);
+            // string base64_img = base64_encode(szBuf, iSize);
 
             // MQTTMessage publish
-            MQTT_PubMessage(mycameras[i], out_timesnap, base64_img);
+            MQTT_PubMessage(mycameras[i], out_timesnap);
+
+            system("echo \"hello, world!\" ");
 
             // image2cloud
             //TODO:
