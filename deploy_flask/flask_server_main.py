@@ -49,8 +49,12 @@ def face_compare(project):
         im_bytes = base64.b64decode(request.json['image'].encode("utf-8"))
         # im_bytes = im_file.read()
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
-        list_of_face_encodings = list(map(lambda x: np.array(list(map(lambda y: float(y), x.split(',')))),
-                                          request.json.get('features').split(';')))
+        # list_of_face_encodings = list(map(lambda x: np.array(list(map(lambda y: float(y), x.split(',')))),
+        #                                   request.json.get('features').split(';')))
+        features = request.json.get('features')
+        list_of_face_index = [int(i.get('id')) for i in features]
+        list_of_face_encodings = [np.array(i.get('feature').split(','), dtype=float) for i in features]
+
         if project in projects["face"]:
             # pdb.set_trace()
             a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im, known_face_locations=None,
@@ -61,7 +65,7 @@ def face_compare(project):
             distances = face_recognition.face_distance(list_of_face_encodings, a_single_unknow_face_encoding[0])
             index = distances.argmin()
             if distances[index] < 0.4:
-                return str(index)
+                return str(list_of_face_index[index])
             else:
                 return "-1"
         else:
