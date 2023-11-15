@@ -17,5 +17,5 @@ IMAGE = "26ed6088dd203bbd7023a64fb263d251.png"
 with open(IMAGE, 'rb') as f:
     image_data = base64.b64encode(f.read()).decode("utf-8")
 
-response = requests.post(DETECTION_URL, json={'image': image_data}).json()
-pprint.pprint(response)
+response = requests.post(DETECTION_URL, json={'image': image_data})
+pprint.pprint(response.text)
