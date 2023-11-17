@@ -52,9 +52,16 @@ def face_compare(project):
         # list_of_face_encodings = list(map(lambda x: np.array(list(map(lambda y: float(y), x.split(',')))),
         #                                   request.json.get('features').split(';')))
         features = request.json.get('features')
-        list_of_face_index = [int(i.get('id')) for i in features]
-        list_of_face_encodings = [np.array(i.get('feature').split(','), dtype=float) for i in features]
+        list_of_face_index = []
+        list_of_face_encodings = []
+        for i in features:
+            id_index = int(i.get('id'))
+            features_index = list(map(lambda x: np.array(list(map(lambda y: float(y), x.split(',')))),
+                                      i.get('feature').split(';')))
+            list_of_face_index += [id_index] * len(features_index)
+            list_of_face_encodings += features_index
 
+        assert len(list_of_face_index) == len(list_of_face_encodings)
         if project in projects["face"]:
             # pdb.set_trace()
             a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im, known_face_locations=None,
