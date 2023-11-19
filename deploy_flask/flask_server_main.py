@@ -21,7 +21,6 @@ model = YOLO("yolov8n.pt")
 app = Flask(__name__)
 projects = {"face": ["cjjb"], "upload": ["sqsy"]}
 
-HOSTS = ["127.0.0.1", "120.27.216.254"]
 FACE_ENCODE_URL = '/face-encode/<project>'
 FACE_COMPARE_URL = '/face-compare/<project>'
 UPLOAD_URL = '/upload/<project>'
