@@ -14,15 +14,23 @@ import gevent
 from gevent import pywsgi
 import json
 import base64
+from ultralytics import YOLO
+
+model = YOLO("yolov8n.pt")
+
 app = Flask(__name__)
 projects = {"face": ["cjjb"], "upload": ["sqsy"]}
 
+HOSTS = ["127.0.0.1", "120.27.216.254"]
 FACE_ENCODE_URL = '/face-encode/<project>'
 FACE_COMPARE_URL = '/face-compare/<project>'
 UPLOAD_URL = '/upload/<project>'
 
 @app.route(FACE_ENCODE_URL, methods=['POST'])
 def face_encode(project):
+    # if request.remote_addr not in HOSTS:
+    #     return
+
     if request.method != 'POST':
         return {"error": "request method only support POST"}
     if request.json.get('image'):
@@ -31,10 +39,17 @@ def face_encode(project):
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
         if project in projects["face"]:
             # pdb.set_trace()
-            features = face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=1,
-                                                            model='large')
-            if len(features) <= 0:
+            # features = face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=5,
+            #                                                 model='large')
+            location = model(im)[0].boxes.data.cpu().numpy()
+            location = location[location[:, 5] == 0]
+            # if len(features) <= 0:
+            #     return {"error": "not find face in image"}
+            if location.shape[0] == 0:
                 return {"error": "not find face in image"}
+            tr_y, tr_x, lb_y, lb_x = int(location[0][1]), int(location[0][2]), int(location[0][3]), int(location[0][0])
+            features = face_recognition.face_encodings(face_image=im, known_face_locations=[(tr_y, tr_x, lb_y, lb_x)],
+                                                       num_jitters=10, model='large')
             return ','.join([str(i) for i in list(features[0])])
         else:
             return {"error": "not support {}".format(project)}
@@ -43,6 +58,9 @@ def face_encode(project):
 
 @app.route(FACE_COMPARE_URL, methods=['POST'])
 def face_compare(project):
+    # if request.remote_addr not in HOSTS:
+    #     return
+
     if request.method != 'POST':
         return {"error": "request method only support POST"}
     if request.json.get('image') and request.json.get('features'):
@@ -64,17 +82,26 @@ def face_compare(project):
         assert len(list_of_face_index) == len(list_of_face_encodings)
         if project in projects["face"]:
             # pdb.set_trace()
-            a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im, known_face_locations=None,
-                                                                            num_jitters=1, model='large')
-            if len(a_single_unknow_face_encoding) <= 0:
+            # a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im, known_face_locations=None,
+            #                                                                 num_jitters=5, model='large')
+            locations = model(im)[0].boxes.data.cpu().numpy()
+            locations = locations[locations[:, 5] == 0]
+            # if len(features) <= 0:
+            #     return {"error": "not find face in image"}
+            if locations.shape[0] == 0:
                 return {"error": "not find face in image"}
-
-            distances = face_recognition.face_distance(list_of_face_encodings, a_single_unknow_face_encoding[0])
-            index = distances.argmin()
-            if distances[index] < 0.4:
-                return str(list_of_face_index[index])
-            else:
-                return "-1"
+            for i in range(locations.shape[0]):
+                tr_y, tr_x, lb_y, lb_x = (int(locations[i][1]), int(locations[i][2]), int(locations[i][3]),
+                                          int(locations[i][0]))
+                a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im,
+                                                    known_face_locations=[(tr_y, tr_x, lb_y, lb_x)],
+                                                    num_jitters=10,
+                                                    model='large')
+                distances = face_recognition.face_distance(list_of_face_encodings, a_single_unknow_face_encoding[0])
+                index = distances.argmin()
+                if distances[index] < 0.3:
+                    return str(list_of_face_index[index])
+            return "-1"
         else:
             return {"error": "not support {}".format(project)}
     else:
@@ -82,10 +109,15 @@ def face_compare(project):
 
 @app.route("/my_fcn")
 def my_fcn():
+    # if request.remote_addr not in HOSTS:
+    #     return
     return "hello, world"\
 
 @app.route(UPLOAD_URL, methods=['POST'])
 def upload(project):
+    # if request.remote_addr not in HOSTS:
+    #     return
+
     if request.method != 'POST':
         return {"error": "request method only support POST"}
     if request.files.get('image'):
