@@ -40,7 +40,7 @@ def face_encode(project):
             # pdb.set_trace()
             # features = face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=5,
             #                                                 model='large')
-            location = model(im)[0].boxes.data.cpu().numpy()
+            location = model.predict(im, conf=0.5)[0].boxes.data.cpu().numpy()
             location = location[location[:, 5] == 0]
             # if len(features) <= 0:
             #     return {"error": "not find face in image"}
@@ -83,7 +83,7 @@ def face_compare(project):
             # pdb.set_trace()
             # a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im, known_face_locations=None,
             #                                                                 num_jitters=5, model='large')
-            locations = model(im)[0].boxes.data.cpu().numpy()
+            locations = model.predict(im, conf=0.5)[0].boxes.data.cpu().numpy()
             locations = locations[locations[:, 5] == 0]
             # if len(features) <= 0:
             #     return {"error": "not find face in image"}
