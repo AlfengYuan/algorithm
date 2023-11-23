@@ -48,7 +48,7 @@ def face_encode(project):
                 return {"error": "not find face in image"}
             tr_y, tr_x, lb_y, lb_x = int(location[0][1]), int(location[0][2]), int(location[0][3]), int(location[0][0])
             features = face_recognition.face_encodings(face_image=im, known_face_locations=[(tr_y, tr_x, lb_y, lb_x)],
-                                                       num_jitters=10, model='large')
+                                                       num_jitters=1, model='large')
             return ','.join([str(i) for i in list(features[0])])
         else:
             return {"error": "not support {}".format(project)}
@@ -94,7 +94,7 @@ def face_compare(project):
                                           int(locations[i][0]))
                 a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im,
                                                     known_face_locations=[(tr_y, tr_x, lb_y, lb_x)],
-                                                    num_jitters=10,
+                                                    num_jitters=1,
                                                     model='large')
                 distances = face_recognition.face_distance(list_of_face_encodings, a_single_unknow_face_encoding[0])
                 index = distances.argmin()
