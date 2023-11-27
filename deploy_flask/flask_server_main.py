@@ -99,6 +99,7 @@ def face_compare(project):
                 distances = face_recognition.face_distance(list_of_face_encodings, a_single_unknow_face_encoding[0])
                 index = distances.argmin()
                 if distances[index] < 0.3:
+                    print("success: {}".format(str(list_of_face_index[index])))
                     return str(list_of_face_index[index])
             return "-1"
         else:
