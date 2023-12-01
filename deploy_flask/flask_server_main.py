@@ -21,47 +21,60 @@ model = YOLO("yolov8n.pt")
 app = Flask(__name__)
 projects = {"face": ["cjjb"], "upload": ["sqsy"]}
 
+HOSTS = ["127.0.0.1"]
 FACE_ENCODE_URL = '/face-encode/<project>'
 FACE_COMPARE_URL = '/face-compare/<project>'
 UPLOAD_URL = '/upload/<project>'
 
 @app.route(FACE_ENCODE_URL, methods=['POST'])
 def face_encode(project):
-    # if request.remote_addr not in HOSTS:
-    #     return
+    # print("1111111111111111111")
+    if request.remote_addr not in HOSTS:
+        return
 
     if request.method != 'POST':
         return {"error": "request method only support POST"}
+
     if request.json.get('image'):
         im_bytes = base64.b64decode(request.json['image'].encode("utf-8"))
-        # im_bytes = im_file.read()
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
         if project in projects["face"]:
             # pdb.set_trace()
             # features = face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=5,
             #                                                 model='large')
+            if im is None:
+                print("image data error!")
+                return {"error": "image data error!"}
+
+            # print("im data shape: {}".format(im.shape))
+            # print("im data type: {}".format(type(im)))
+
             location = model.predict(im, conf=0.5)[0].boxes.data.cpu().numpy()
             location = location[location[:, 5] == 0]
             # if len(features) <= 0:
             #     return {"error": "not find face in image"}
             if location.shape[0] == 0:
+                print("not find face in image")
                 return {"error": "not find face in image"}
             tr_y, tr_x, lb_y, lb_x = int(location[0][1]), int(location[0][2]), int(location[0][3]), int(location[0][0])
             features = face_recognition.face_encodings(face_image=im, known_face_locations=[(tr_y, tr_x, lb_y, lb_x)],
                                                        num_jitters=1, model='large')
             return ','.join([str(i) for i in list(features[0])])
         else:
+            print("not support {}".format(project))
             return {"error": "not support {}".format(project)}
     else:
+        print("not right image data, please use json type")
         return {"error": "not right image data, please use json type"}
 
 @app.route(FACE_COMPARE_URL, methods=['POST'])
 def face_compare(project):
-    # if request.remote_addr not in HOSTS:
-    #     return
+    if request.remote_addr not in HOSTS:
+        return
 
     if request.method != 'POST':
         return {"error": "request method only support POST"}
+
     if request.json.get('image') and request.json.get('features'):
         im_bytes = base64.b64decode(request.json['image'].encode("utf-8"))
         # im_bytes = im_file.read()
@@ -89,6 +102,12 @@ def face_compare(project):
             #     return {"error": "not find face in image"}
             if locations.shape[0] == 0:
                 return {"error": "not find face in image"}
+            if im is None:
+                return {"error": "image data error!"}
+
+            # print("im data shape: {}".format(im.shape))
+            # print("im data type: {}".format(type(im)))
+
             for i in range(locations.shape[0]):
                 tr_y, tr_x, lb_y, lb_x = (int(locations[i][1]), int(locations[i][2]), int(locations[i][3]),
                                           int(locations[i][0]))
@@ -105,18 +124,19 @@ def face_compare(project):
         else:
             return {"error": "not support {}".format(project)}
     else:
+        print("not right image data or features data, please use correct json type")
         return {"error": "not right image data or features data, please use correct json type"}
 
 @app.route("/my_fcn")
 def my_fcn():
-    # if request.remote_addr not in HOSTS:
-    #     return
+    if request.remote_addr not in HOSTS:
+        return
     return "hello, world"\
 
 @app.route(UPLOAD_URL, methods=['POST'])
 def upload(project):
-    # if request.remote_addr not in HOSTS:
-    #     return
+    if request.remote_addr not in HOSTS:
+        return
 
     if request.method != 'POST':
         return {"error": "request method only support POST"}
