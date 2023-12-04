@@ -1,1 +1,0 @@
-/usr/bin/aarch64-linux-gnu-g++ -Wl,--allow-shlib-undefined -rdynamic CMakeFiles/base64_unittest.dir/base64_unittest.cpp.o -o ../../bin/base64_unittest   -L/workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/soc-sdk/lib  -Wl,-rpath,/workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/soc-sdk/lib ../../lib/libbmutility.a -lpthread 

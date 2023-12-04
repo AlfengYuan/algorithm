@@ -1,2 +1,0 @@
-/usr/bin/aarch64-linux-gnu-ar qc ../../lib/libbmutility.a CMakeFiles/bmutility.dir/bmutility_pool.cpp.o CMakeFiles/bmutility.dir/stream_sei.cpp.o CMakeFiles/bmutility.dir/stream_demuxer.cpp.o CMakeFiles/bmutility.dir/stream_decode.cpp.o CMakeFiles/bmutility.dir/stream_cvdecode.cpp.o CMakeFiles/bmutility.dir/bmutility_timer.cpp.o CMakeFiles/bmutility.dir/bmutility_string.cpp.o
-/usr/bin/aarch64-linux-gnu-ranlib ../../lib/libbmutility.a
