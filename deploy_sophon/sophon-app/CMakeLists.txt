@@ -55,4 +55,4 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 aux_source_directory(./src SRC_FILES)
 
 add_executable(sophon-app.soc ${SRC_FILES})
-target_link_libraries(sophon-app.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} ${JSONCPPLIBS} -lpthread -lavcodec -lavformat -lavutil -lbmcv)
+target_link_libraries(sophon-app.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} ${JSONCPPLIBS} -lpthread -lavcodec -lavformat -lavutil -lbmcv -ldl)
