@@ -39,3 +39,4 @@
 */*/*.onnx
 *.pt
 *.pth
+*/cmake-build-debug/*
