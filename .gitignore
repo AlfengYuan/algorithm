@@ -40,3 +40,4 @@
 *.pt
 *.pth
 */*/cmake-build-debug
+*/*/release
