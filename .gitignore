@@ -41,3 +41,4 @@
 *.pth
 */*/cmake-build-debug
 */*/release
+*/sophon-app_old

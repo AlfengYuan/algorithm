@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2023 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -40,8 +40,8 @@
  *
  * @endcond
  * @cond MQTTClient_main
- * @mainpage MQTT Client library for C (MQTTClient)
- * &copy; Copyright 2009, 2023 IBM Corp., Ian Craggs and others
+ * @mainpage MQTT Client library for C
+ * &copy; Copyright IBM Corp. 2009, 2020 and others
  *
  * @brief An MQTT client library in C.
  *
@@ -179,13 +179,9 @@
   */
  #define MQTTCLIENT_BAD_MQTT_VERSION -11
 /**
- * Return code: protocol prefix in serverURI should be:
- * @li @em tcp:// or @em mqtt:// - Insecure TCP
- * @li @em ssl:// or @em mqtts:// - Encrypted SSL/TLS
- * @li @em ws:// - Insecure websockets
- * @li @em wss:// - Secure web sockets
- * The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS
- * version of the library is linked with.
+ * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
+ * The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library
+ * is linked with.
  */
 #define MQTTCLIENT_BAD_PROTOCOL -14
  /**
@@ -498,21 +494,13 @@ LIBMQTT_API int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTCl
  * this function.
  * @param serverURI A null-terminated string specifying the server to
  * which the client will connect. It takes the form <i>protocol://host:port</i>.
- * Currently, <i>protocol</i> must be:
- * <br>
- * @em tcp:// or @em mqtt:// - Insecure TCP
- * <br>
- * @em ssl:// or @em mqtts:// - Encrypted SSL/TLS
- * <br>
- * @em ws:// - Insecure websockets
- * <br>
- * @em wss:// - Secure web sockets
- * <br>
- * The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS
- * version of the library is linked with.
- * For <i>host</i>, you can specify either an IP address or a host name. For
- * instance, to connect to a server running on the local machines with the
- * default MQTT port, specify <i>tcp://localhost:1883</i>.
+ * Currently, <i>protocol</i> must be <i>tcp</i>, <i>ssl</i>, <i>ws</i> or <i>wss</i>.
+ * The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library
+ * is linked with.
+ * For <i>host</i>, you can
+ * specify either an IP address or a host name. For instance, to connect to
+ * a server running on the local machines with the default MQTT port, specify
+ * <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
  * client connects to it. It is a null-terminated UTF-8 encoded string.
  * @param persistence_type The type of persistence to be used by the client:
@@ -814,12 +802,6 @@ LIBMQTT_API MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
  * values to 0 (NULL for pointers). A #keepAliveInterval setting of 0 prevents
  * correct operation of the client and so you <b>must</b> at least set a value
  * for #keepAliveInterval.
- *
- * Suitable default values are set in the following initializers:
- * - MQTTClient_connectOptions_initializer: for MQTT 3.1.1 non-WebSockets
- * - MQTTClient_connectOptions_initializer5: for MQTT 5.0 non-WebSockets
- * - MQTTClient_connectOptions_initializer_ws: for MQTT 3.1.1 WebSockets
- * - MQTTClient_connectOptions_initializer5_ws: for MQTT 5.0 WebSockets
  */
 typedef struct
 {
@@ -969,32 +951,24 @@ typedef struct
 	 */
 	const MQTTClient_nameValue* httpHeaders;
 	/**
-	 * HTTP proxy
+	 * HTTP proxy for websockets
 	 */
 	const char* httpProxy;
 	/**
-	 * HTTPS proxy
+	 * HTTPS proxy for websockets
 	 */
 	const char* httpsProxy;
 } MQTTClient_connectOptions;
 
-/** Initializer for connect options for MQTT 3.1.1 non-WebSocket connections */
 #define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
+0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL}
 
-/** Initializer for connect options for MQTT 5.0 non-WebSocket connections */
 #define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 
-/** Initializer for connect options for MQTT 3.1.1 WebSockets connections.
-  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
-  */
 #define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
 
-/** Initializer for connect options for MQTT 5.0 WebSockets connections.
-  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
-  */
 #define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 
@@ -1402,14 +1376,6 @@ LIBMQTT_API void MQTTClient_freeMessage(MQTTClient_message** msg);
 LIBMQTT_API void MQTTClient_free(void* ptr);
 
 /**
-  * This function is used to allocate memory to be used or freed by the MQTT C client library,
-  * especially the data in user persistence. This is needed on Windows when the client library
-  * and application program have been compiled with different versions of the C compiler.
-  * @param size The size of the memory to be allocated.
-  */
-LIBMQTT_API void* MQTTClient_malloc(size_t size);
-
-/**
   * This function frees the memory allocated to an MQTT client (see
   * MQTTClient_create()). It should be called when the client is no longer
   * required.
@@ -1441,8 +1407,7 @@ LIBMQTT_API void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level);
 
 /**
   * This is a callback function prototype which must be implemented if you want
-  * to receive trace information. Do not invoke any other Paho API calls in this
-  * callback function - unpredictable behavior may result.
+  * to receive trace information.
   * @param level the trace level of the message returned
   * @param message the trace message.  This is a pointer to a static buffer which
   * will be overwritten on each call.  You must copy the data if you want to keep
@@ -1616,7 +1581,7 @@ LIBMQTT_API const char* MQTTClient_strerror(int code);
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://mqtt.eclipseprojects.io:1883"
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -1683,7 +1648,7 @@ int main(int argc, char* argv[])
 #include <windows.h>
 #endif
 
-#define ADDRESS     "tcp://mqtt.eclipseprojects.io:1883"
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -1792,7 +1757,7 @@ exit:
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://mqtt.eclipseprojects.io:1883"
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"

@@ -40,7 +40,7 @@ set(SAIL_LIBS "${SAIL_PATH}/lib/libsail.so")
 message("PAHO-MQTT: ${MQTT_PATH}")
 include_directories("${MQTT_PATH}/include")
 link_directories("${MQTT_PATH}/lib")
-set(MQTTLIBS paho-mqtt3c)
+set(MQTTLIBS "${MQTT_PATH}/lib/libpaho-mqtt3c.a")
 
 message("JSONCPP: ${JSONCPP_PATH}")
 include_directories("${JSONCPP_PATH}/include")
