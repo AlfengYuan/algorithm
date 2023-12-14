@@ -1,6 +1,14 @@
-aarch64-linux-gnu-g++ 
- -I sophon-app/3rdparty/paho-mqtt/include/ 
- -L sophon-app/3rdparty/paho-mqtt/lib/ 
- -L sophon-app/3rdparty/openssl/lib/ 
- async_publish_time.cpp
+aarch64-linux-gnu-g++                           \
+ -I sophon-app/3rdparty/paho-mqtt/include/      \
+ -L sophon-app/3rdparty/paho-mqtt/lib/          \
+ -L sophon-app/3rdparty/openssl/lib/            \
+ async_publish_time.cpp                         \
  -lpaho-mqtt3as -lpaho-mqttpp3 -lssl -lcrypto
+
+
+ aarch64-linux-gnu-g++                                                                 \
+  -I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/paho-mqtt/include/      \ 
+  -L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/paho-mqtt/lib/          \
+  -L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/openssl/lib/            \
+  multithr_pub_sub.cpp                                                                 \
+  -lpaho-mqtt3as -lpaho-mqttpp3 -lssl -lcrypto -lpthread

@@ -54,7 +54,7 @@
 using namespace std;
 using namespace std::chrono;
 
-const std::string DFLT_SERVER_ADDRESS {"tcp://192.168.0.102:1883" };
+const std::string DFLT_SERVER_ADDRESS {"mqtt://localhost:1883" };
 
 // The QoS for sending data
 const int QOS = 1;
