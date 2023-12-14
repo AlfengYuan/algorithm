@@ -6,6 +6,8 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 set(CMAKE_BUILD_TYPE "Debug")
 #add_compile_options(-Wall -Wextra -fpermissive)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O3")
+# Enable C++17
+set(CMAKE_CXX_STANDARD 17)
 #add_definitions(-w)
 
 set(TARGET_ARCH soc)
