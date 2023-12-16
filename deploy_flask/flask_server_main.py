@@ -26,6 +26,7 @@ FACE_ENCODE_URL = '/face-encode/<project>'
 FACE_COMPARE_URL = '/face-compare/<project>'
 UPLOAD_URL = '/upload/<project>'
 
+
 @app.route(FACE_ENCODE_URL, methods=['POST'])
 def face_encode(project):
     # print("1111111111111111111")
@@ -67,6 +68,7 @@ def face_encode(project):
         print("not right image data, please use json type")
         return {"error": "not right image data, please use json type"}
 
+
 @app.route(FACE_COMPARE_URL, methods=['POST'])
 def face_compare(project):
     if request.remote_addr not in HOSTS:
@@ -86,7 +88,9 @@ def face_compare(project):
         list_of_face_encodings = []
         for i in features:
             id_index = int(i.get('id'))
-            features_index = list(map(lambda x: np.array(list(map(lambda y: float(y), x.split(',')))),
+            # ValueError: could not convert string to float: ''
+            features_index = list(map(lambda x: np.array(list(map(lambda y: float(y.strip(' ').strip('\r').strip('\n')),
+                                                                  x.split(',')[:128]))),
                                       i.get('feature').split(';')))
             list_of_face_index += [id_index] * len(features_index)
             list_of_face_encodings += features_index
@@ -112,9 +116,10 @@ def face_compare(project):
                 tr_y, tr_x, lb_y, lb_x = (int(locations[i][1]), int(locations[i][2]), int(locations[i][3]),
                                           int(locations[i][0]))
                 a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im,
-                                                    known_face_locations=[(tr_y, tr_x, lb_y, lb_x)],
-                                                    num_jitters=1,
-                                                    model='large')
+                                                                                known_face_locations=[
+                                                                                    (tr_y, tr_x, lb_y, lb_x)],
+                                                                                num_jitters=1,
+                                                                                model='large')
                 distances = face_recognition.face_distance(list_of_face_encodings, a_single_unknow_face_encoding[0])
                 index = distances.argmin()
                 if distances[index] < 0.3:
@@ -127,13 +132,16 @@ def face_compare(project):
         print("not right image data or features data, please use correct json type")
         return {"error": "not right image data or features data, please use correct json type"}
 
+
 @app.route("/my_fcn")
 def my_fcn():
     if request.remote_addr not in HOSTS:
         return
-    return "hello, world"\
+    return "hello, world" \
+ \
+        @ app.route(UPLOAD_URL, methods=['POST'])
 
-@app.route(UPLOAD_URL, methods=['POST'])
+
 def upload(project):
     if request.remote_addr not in HOSTS:
         return
