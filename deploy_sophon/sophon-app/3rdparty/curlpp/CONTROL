@@ -1,0 +1,8 @@
+Package: curlpp
+Version: 2018-06-15
+Port-Version: 9
+Depends: curl, vcpkg-cmake, vcpkg-cmake-config
+Architecture: arm64-linux
+Multi-Arch: same
+Abi: 5408152f19c51e4f6a0c6aede4b8c865a3c14461df2b0f303be2140fc48029a2
+Description: C++ wrapper around libcURL
