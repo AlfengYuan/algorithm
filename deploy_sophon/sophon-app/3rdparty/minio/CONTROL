@@ -1,8 +1,0 @@
-Package: minio-cpp
-Version: 0.1.1
-Port-Version: 1
-Depends: curlpp, inih, nlohmann-json, openssl, pugixml, vcpkg-cmake, vcpkg-cmake-config
-Architecture: arm64-linux
-Multi-Arch: same
-Abi: f0cce6d9fb41a2534d7290f716e12fb2d7116b88c6883d5a4b26c14b6ba4d73b
-Description: The MinIO C++ Client SDK provides simple APIs to access any Amazon S3 compatible object storage
