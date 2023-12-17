@@ -1,0 +1,43 @@
+{
+    "cards": [
+      {
+        "devid": 0,
+        "cameras": [
+          {
+            "address": "rtsp://admin:yz123456@192.168.150.14:554/h264/ch1/sub/av_stream",
+            "chan_num": 1,
+            "model_names": ["ex1"]
+          }
+        ]
+      }
+    ],
+    "pipeline": {
+      "preprocess": {
+        "thread_num": 4,
+        "queue_size": 16
+      },
+      "inference": {
+        "thread_num": 1,
+        "queue_size": 16
+      },
+      "postprocess": {
+        "thread_num": 4,
+        "queue_size": 16
+      }
+    },
+    "models":[
+      {
+        "name": "ex1",
+        "path": "/data/yolov5s/yolov5s_v6.1_3output_int8_1b.bmodel",
+        "model_type": "yolov5s",
+        "skip_frame_num": 0,
+        "output_path": "/data/yolov5s/pipeline-result",
+  
+        "obj_threshold": 0.5,
+        "nms_threshold": 0.5,
+        "class_threshold": 0.5
+  
+      }
+    ]
+  }
+  
