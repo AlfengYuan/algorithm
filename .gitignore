@@ -41,3 +41,6 @@
 */*/release
 */sophon-app_old
 *.out
+share
+lib
+debug
