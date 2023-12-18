@@ -48,7 +48,7 @@ set(SAIL_LIBS "${SAIL_PATH}/lib/libsail.so")
 message("PAHO-MQTT: ${MQTT_PATH}")
 include_directories("${MQTT_PATH}/include")
 link_directories("${MQTT_PATH}/lib")
-set(MQTTLIBS mqttcpp paho-mqtt3c)
+set(MQTTLIBS paho-mqttpp3 paho-mqtt3as paho-mqtt3c)
 
 message("MINIO: ${MINIO_PATH}")
 include_directories("${MINIO_PATH}/include")
