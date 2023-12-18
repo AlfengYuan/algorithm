@@ -15,6 +15,7 @@ from gevent import pywsgi
 import json
 import base64
 from ultralytics import YOLO
+import pdb
 
 model = YOLO("yolov8n.pt")
 
@@ -86,14 +87,21 @@ def face_compare(project):
         features = request.json.get('features')
         list_of_face_index = []
         list_of_face_encodings = []
+        # pdb.set_trace()
         for i in features:
             id_index = int(i.get('id'))
             # ValueError: could not convert string to float: ''
-            features_index = list(map(lambda x: np.array(list(map(lambda y: float(y.strip(' ').strip('\r').strip('\n')),
-                                                                  x.split(',')[:128]))),
-                                      i.get('feature').split(';')))
-            list_of_face_index += [id_index] * len(features_index)
-            list_of_face_encodings += features_index
+            current_list_of_face_encodings = []
+            for feature in i.get('feature').strip(' ').split(';'):
+                if feature.strip(' ') != '':
+                    current_feature = []
+                    for f in feature.split(',')[:128]:
+                        current_feature.append(float(f.strip(' ').strip('\r').strip('\n')))
+                    current_list_of_face_encodings.append(current_feature)
+                else:
+                    continue
+            list_of_face_index += [id_index] * len(current_list_of_face_encodings)
+            list_of_face_encodings += current_list_of_face_encodings
 
         assert len(list_of_face_index) == len(list_of_face_encodings)
         if project in projects["face"]:
