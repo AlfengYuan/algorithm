@@ -104,6 +104,8 @@ def face_compare(project):
             list_of_face_encodings += current_list_of_face_encodings
 
         assert len(list_of_face_index) == len(list_of_face_encodings)
+        if len(list_of_face_encodings) == 0:
+            return "-1"
         if project in projects["face"]:
             # pdb.set_trace()
             # a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im, known_face_locations=None,
@@ -145,11 +147,10 @@ def face_compare(project):
 def my_fcn():
     if request.remote_addr not in HOSTS:
         return
-    return "hello, world" \
- \
-        @ app.route(UPLOAD_URL, methods=['POST'])
+    return "hello, world"
 
 
+@app.route(UPLOAD_URL, methods=['POST'])
 def upload(project):
     if request.remote_addr not in HOSTS:
         return
