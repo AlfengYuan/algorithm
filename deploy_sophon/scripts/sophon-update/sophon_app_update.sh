@@ -8,6 +8,6 @@ sudo mv paho-mqtt /opt/sophon
 sudo mv etc/profile.d/sophon-mqtt-rpath.sh /etc/profile.d/
 sudo mv etc/profile.d/sophon-sail-rpath.sh /etc/profile.d/
 
-sudo cd /tmp/
+cd /tmp/
 sudo rm -rf updatetemp
 echo "update complete!"

@@ -1,5 +1,0 @@
-aarch64-linux-gnu-g++ --std=c++17
-get_file_size.cpp
--I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/boost/include/
--L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/boost/lib/
--lboost_filesystem --static
