@@ -46,3 +46,6 @@ lib
 debug
 BUILD_INFO
 CONTROL
+*.tar
+*.tar.gz
+*.zip
