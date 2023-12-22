@@ -1,0 +1,11 @@
+[Unit]
+Description=My Script Service
+After=bmrt_setup.service
+
+[Service]
+User=root
+ExecStart=/data/bm-app/myscript.sh
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

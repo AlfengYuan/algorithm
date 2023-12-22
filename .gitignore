@@ -49,4 +49,7 @@ CONTROL
 *.tar
 *.tar.gz
 *.zip
+*.a
+*.so.*
+*.so
 test
