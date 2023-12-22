@@ -1,0 +1,19 @@
+aarch64-linux-gnu-g++ --std=c++17
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/paho-mqtt/include/
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/minio/include/
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/nlohmann-json/include/
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/curlpp/include/
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/curl/include/
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/openssl3/include/
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/pugixml/include/
+-I /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/inih/include/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/paho-mqtt/lib/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/minio/lib/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/curlpp/lib/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/curl/lib/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/openssl3/lib/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/pugixml/lib/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/inih/lib/
+-L /workspace/Release_2309TLS-public/RC2/sophon-app/3rdparty/zlib/lib/
+minio_mqtt_upload.cpp
+-lpaho-mqttpp3 -lpaho-mqtt3as -lminiocpp  -lcurlpp -lcurl -lssl -lcrypto -lpugixml -linih -lz -lpthread -ldl
