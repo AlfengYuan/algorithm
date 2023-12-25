@@ -16,7 +16,12 @@
 #ifndef _MINIO_CREDS_PROVIDERS_H
 #define _MINIO_CREDS_PROVIDERS_H
 
+#ifdef USE_SOPHON_SAIL 
+#include "inireader.hpp"
+#else
 #include <INIReader.h>
+#endif
+
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/socket.h>

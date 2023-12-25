@@ -107,8 +107,6 @@ message("BOOST: ${BOOST_PATH}")
 include_directories("${BOOST_PATH}/include")
 link_directories("${BOOST_PATH}/lib")
 
-
-
 add_compile_definitions(USE_BMCV=1)
 add_compile_definitions(USE_FFMPEG=1)
 add_compile_definitions(USE_OPENCV=1)
@@ -118,5 +116,5 @@ aux_source_directory(./src SRC_FILES)
 
 add_executable(${PROJECT_NAME}.soc ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME}.soc ${BM_LIBS} ${OPENCV_LIBS} ${JPU_LIBS} ${SAIL_LIBS} ${MQTTLIBS} ${MINIOLIBS}
-        ${CURLPPLIBS} ${CURLLIBS} ${OPENSSLLIBS} ${PUGIXMLLIBS} ${INIHLIBS} ${ZLIBLIBS} ${JSONCPPLIBS}
+        ${CURLPPLIBS} ${CURLLIBS} ${OPENSSLLIBS} ${PUGIXMLLIBS} ${ZLIBLIBS} ${JSONCPPLIBS} ${INIHLIBS}
         -lavcodec -lavformat -lavutil -lbmcv -lpthread -ldl)

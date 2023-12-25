@@ -27,6 +27,9 @@ You may obtain a copy of the License at
 #include <string>
 #include <sstream>
 #include <algorithm>
+#define USE_SOPHON_SAIL
+#include "miniocpp/client.h"
+
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -39,7 +42,7 @@ You may obtain a copy of the License at
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
-#define QOS         2
+#define QOS         1
 #define TIMEOUT     1000000L
 
 using namespace std;
@@ -64,7 +67,20 @@ public:
     string addres;
 }Cameras;
 
-
+static string get_current_time()
+{
+    //get timesnap
+//    std::chrono::system_clock::time_point now = std::chrono::system_clock::now() + std::chrono::minutes(2)
+//                                                - std::chrono::seconds(7);
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    time_t tNow = std::chrono::system_clock::to_time_t(now);
+    std::tm *now_tm = std::localtime(&tNow);
+    char buffer[200];
+    std::strftime(buffer, size(buffer), "%Y%m%d%H%M%S", now_tm);
+//  string str_time = std::ctime(&tNow);
+    string str_time = buffer;
+    return str_time;
+}
 
 int MQTT_PubMessage(Cameras &camera, string &timesnap)
 {
@@ -119,6 +135,71 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap)
     return 0;
 }
 
+int Minio_File_Upload(Cameras &camera, string &timesnap)
+{
+    // Create S3 base URL.
+    minio::s3::BaseUrl base_url("play.min.io");
+
+    // Create credential provider
+    minio::creds::StaticProvider provider(
+            "test", "test"
+    );
+
+    // Create S3 client
+    minio::s3::Client client(base_url, &provider);
+    client.Debug(true);
+    std::string bucket_name = "sqsy";
+
+    // Check 'asiatrip' bucket exist or not.
+    bool exist;
+    {
+        minio::s3::BucketExistsArgs  args;
+        args.bucket = bucket_name;
+
+        minio::s3::BucketExistsResponse resp = client.BucketExists(args);
+        if(!resp)
+        {
+            std::cout << "unable to do bucket existence check; " << resp.Error() << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        exist = resp.exist;
+    }
+
+    // Make 'asiatrip' bucket if not exist
+    if(!exist)
+    {
+        minio::s3::MakeBucketArgs args;
+        args.bucket = bucket_name;
+
+        minio::s3::MakeBucketResponse resp = client.MakeBucket(args);
+        if(!resp)
+        {
+            std::cout << "unable to create bucket; " << resp.Error() << std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+
+    // Upload '/home/user/Photos/asiaphotos.zip' as object name
+    // 'asiaphotos-2015.zip' to bucket 'asiatrip'
+    minio::s3::UploadObjectArgs args;
+    args.bucket = bucket_name;
+    args.object = camera.addres + "/" + to_string(static_cast<int>(camera.state)) + "/" + timesnap + ".jpg";
+    args.filename = "./results/images/" + timesnap + ".jpg";
+
+    minio::s3::UploadObjectResponse resp = client.UploadObject(args);
+    if(!resp)
+    {
+        std::cout << "unable to upload object; " << resp.Error() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    std::cout << "'" << args.filename << "' is successfully uploaded as "
+              << "object '" << args.object << "' to bucket '" << args.bucket << "'"
+              << std::endl;
+    return EXIT_SUCCESS;
+}
+
 /**
  * @brief Load a bmodel and do inference.
  *
@@ -136,7 +217,7 @@ bool inference(
     SQSY*              out_value,
     string&            out_timesnap){
     // init Engine
-    sail::Engine engine(tpu_id);    
+    sail::Engine engine(tpu_id);
 
     // load bmodel without builtin input and output tensors
     engine.load(bmodel_path);
@@ -160,7 +241,7 @@ bool inference(
     sail::Tensor out(handle, output_shape, output_dtype, true, true);
     std::map<std::string, sail::Tensor*> input_tensors = {{input_name, &in}};
     std::map<std::string, sail::Tensor*> output_tensors = {{output_name, &out}};
-    
+
     // prepare input and output data in system memory with data type of float32
     float* input = nullptr;
     float* output = nullptr;
@@ -187,7 +268,7 @@ bool inference(
     auto img_dtype = bmcv.get_bm_image_data_format(input_dtype);
     float scale = engine.get_input_scale(graph_name, input_name);
     BmcvPreProcessor preprocessor(bmcv, scale);
-    
+
     PostProcessor postprocessor(output_shape[0], output_shape[1], 3);
 
     // init decoder.
@@ -206,8 +287,8 @@ bool inference(
     sail::BMImage img1(handle, input_shape[2], input_shape[3],
                     FORMAT_BGR_PLANAR, img_dtype);
     preprocessor.process(img0, img1);
-    bmcv.bm_image_to_tensor(img1, in);  
-        
+    bmcv.bm_image_to_tensor(img1, in);
+
     //inference
     engine.process(graph_name, input_tensors, input_shapes, output_tensors);
     auto real_output_shape = engine.get_output_shape(graph_name, output_name);
@@ -245,7 +326,9 @@ bool inference(
     //     std::cout << "bmcv put text error !!!" << std::endl;
     // }
 
+    out_timesnap = get_current_time();
     bmcv.imwrite("./results/images/" + out_timesnap + ".jpg" , img0);
+
 
     // free data
     if (input_dtype != BM_FLOAT32) {
@@ -272,7 +355,7 @@ int main(int argc, char *argv[]){
     std::string input_path(argv[1]);
     std::string bmodel_path(argv[2]);
     cout << "bmodel file: " << bmodel_path << endl;
-    
+
     int tpu_id = atoi(argv[3]);
     assert(tpu_id == 0);
 
@@ -282,12 +365,13 @@ int main(int argc, char *argv[]){
     if (access("results", 0) != F_OK)
         mkdir("results", S_IRWXU);
     if (access("results/images", 0) != F_OK)
-        mkdir("results/images", S_IRWXU); 
+        mkdir("results/images", S_IRWXU);
 
     //parser json config<image path>
     Json::Reader reader;
     Json::Value root;
     Json::Value::Members members;
+    string sncode;
     ifstream ifs;
     ifs.open(input_path);
     if(!ifs.is_open())
@@ -317,20 +401,13 @@ int main(int argc, char *argv[]){
         mycameras.push_back(camera);
     }
 
-    // cout << "=====================" << endl;
-    // for(size_t i = 0; i<mycameras.size(); i++)
-    // {
-    //     cout << "camera: " << i << endl;
-    //     cout << "rtsp:" << mycameras[i].rtsp << endl;
-    //     cout << "addres:" << mycameras[i].addres << endl;
-    //     cout << "state:" << mycameras[i].state << endl;
-    //     cout << endl;
-    // }
-    // cout << "======================" << endl;
-
-
+    if(root.isMember("SN"))
+    {
+        sncode = root["SN"].asString();
+    }
 
     bool status = true;
+    int ret = 0;
     //load bmodel and do inference
     while(1)
     {
@@ -338,14 +415,8 @@ int main(int argc, char *argv[]){
         {
 
             //get timesnap
-            time_t rawtime;
-            struct tm *timeinfo;
-            char timebuffer[20];
-            time(&rawtime);
-            timeinfo = localtime(&rawtime);
-            // strftime(timebuffer, sizeof(timebuffer), "%Y-%m-%d_%H:%M:%S", timeinfo);
-            strftime(timebuffer, sizeof(timebuffer), "%Y%m%d%H%M%S", timeinfo);
-            string out_timesnap = timebuffer+mycameras[i].addres;
+
+            string out_timesnap;
 
             string input_path = mycameras[i].rtsp;
             SQSY state = mycameras[i].state;
@@ -364,41 +435,34 @@ int main(int argc, char *argv[]){
 
             mycameras[i].state = out_state;
 
-            if(mycameras[i].state == SQSY::NORMAL) continue;
+//            if(mycameras[i].state == SQSY::NORMAL) continue;
 
             // mycameras[i].timesnap = out_timesnap;
             string jpg_name = "results/images/" + out_timesnap + ".jpg";
-            cout << "jpgname: " << jpg_name << endl;
+//            cout << "jpgname: " << jpg_name << endl;
 
             //encode base64
             // std::ifstream fin(jpg_name, std::ios::binary);
             // fin.seekg(0, ios::end);
             // int iSize = fin.tellg();
             // char* szBuf = new (std::nothrow) char[iSize];
-        
+
             // fin.seekg(0, ios::beg);
             // fin.read(szBuf, sizeof(char) * iSize);
             // fin.close();
 
             // string base64_img = base64_encode(szBuf, iSize);
 
-            // MQTTMessage publish
-            MQTT_PubMessage(mycameras[i], out_timesnap);
+            // minio upload
+            ret = Minio_File_Upload(mycameras[i], out_timesnap);
 
-            system("echo \"hello, world!\" ");
-
-            // image2cloud
-            //TODO:
+            if(ret == 0)
+            {
+                // MQTTMessage publish
+                MQTT_PubMessage(mycameras[i], out_timesnap);
+            }
         }
     }
-
-
-    // bool status = inference(bmodel_path, input_path, tpu_id);
-    // if (status){
-    //     return 0;
-    // }else{
-    //     return 1;
-    // }
 
     return 0;
 }
