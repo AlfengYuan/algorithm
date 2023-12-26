@@ -1,31 +1,16 @@
-/* Copyright 2016-2022 by Sophgo Technologies Inc. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
-
-==============================================================================*/
+//
+// Created by yyf on 23-12-26.
+//
 
 #include "processor.h"
 #include "json/json.h"
 #include "MQTTClient.h"
 #include <ctime>
 #include <iostream>
-#include "base64.hpp"
 
-#include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
-#include <sstream>
 #include <algorithm>
 #include <filesystem>
 #define USE_SOPHON_SAIL
@@ -43,7 +28,7 @@ You may obtain a copy of the License at
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
-#define QOS         1
+#define QOS         2
 #define TIMEOUT     1000000L
 
 using namespace std;
