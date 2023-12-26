@@ -67,6 +67,39 @@ public:
     string addres;
 }Cameras;
 
+static std::string md5(const std::string &input)
+{
+    // init EVP
+    EVP_MD_CTX *mdctx;
+    const EVP_MD *md;
+    mdctx = EVP_MD_CTX_new();
+    md = EVP_md5();
+
+    // init MD5 context
+    EVP_DigestInit_ex(mdctx, md, NULL);
+
+    // update context
+    EVP_DigestUpdate(mdctx, input.c_str(), input.length());
+
+    // get md5 result
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned int md_len;
+    EVP_DigestFinal_ex(mdctx, md_value, &md_len);
+
+    // destory context
+    EVP_MD_CTX_free(mdctx);
+
+    std::string result;
+    for(unsigned int i = 0; i<md_len; i++)
+    {
+        char hex[3];
+        sprintf(hex, "%02x", md_value[i]);
+        result += hex;
+    }
+
+    return result;
+}
+
 static string get_current_time()
 {
     //get timesnap
@@ -109,7 +142,7 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap, const string SN)
         return 0;
     }
 
-    sprintf(buffer, "{\"address\":%s, \"state\": %d, \"time\":%s}", camera.addres.c_str(), int(camera.state), timesnap.c_str());
+    sprintf(buffer, "{\"SN\": %s, \"address\":%s, \"state\": %d, \"time\":%s}", SN.c_str(), camera.addres.c_str(), int(camera.state), timesnap.c_str());
     pubmsg.payload = buffer;
     pubmsg.payloadlen = (int)strlen(buffer);
     pubmsg.qos = QOS;
@@ -135,7 +168,7 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap, const string SN)
     return 0;
 }
 
-int Minio_File_Upload(Cameras &camera, string &timesnap)
+int Minio_File_Upload(Cameras &camera, string &timesnap, const string SN)
 {
     // Create S3 base URL.
     minio::s3::BaseUrl base_url("play.min.io");
@@ -184,8 +217,12 @@ int Minio_File_Upload(Cameras &camera, string &timesnap)
     // 'asiaphotos-2015.zip' to bucket 'asiatrip'
     minio::s3::UploadObjectArgs args;
     args.bucket = bucket_name;
-    args.object = camera.addres + "/" + to_string(static_cast<int>(camera.state)) + "/" + timesnap + ".jpg";
-    args.filename = "./results/images/" + timesnap + ".jpg";
+    args.object = SN + "/" + camera.addres + "/" + to_string(static_cast<int>(camera.state)) + "/" + timesnap + ".jpg";
+    if (camera.state == SQSY::INTERNET_WARN){
+        args.filename = "./black.jpg";
+    } else {
+        args.filename = "./results/images/" + timesnap + ".jpg";
+    }
 
     minio::s3::UploadObjectResponse resp = client.UploadObject(args);
     if(!resp)
@@ -280,6 +317,7 @@ bool inference(
     int ret = decoder.read(handle, img0);
     if (ret != 0) {
         cout<<"Finished to read the video!"<<endl;
+        out_timesnap = get_current_time();
         return false;
     }
 
@@ -403,10 +441,10 @@ int main(int argc, char *argv[]){
 
     if(root.isMember("SN"))
     {
-        sncode = root["SN"].asString();
+        sncode = md5(root["SN"].asString());
     }
     else{
-        sncode = get_current_time();
+        sncode = md5(get_current_time());
     }
 
     bool status = true;
@@ -432,6 +470,7 @@ int main(int argc, char *argv[]){
             catch(runtime_error &e)
             {
                 assert(out_state == SQSY::INTERNET_WARN);
+                out_timesnap = get_current_time();
             }
 
             if(out_state == state) continue;
@@ -440,24 +479,10 @@ int main(int argc, char *argv[]){
 
 //            if(mycameras[i].state == SQSY::NORMAL) continue;
 
-            // mycameras[i].timesnap = out_timesnap;
             string jpg_name = "results/images/" + out_timesnap + ".jpg";
-//            cout << "jpgname: " << jpg_name << endl;
-
-            //encode base64
-            // std::ifstream fin(jpg_name, std::ios::binary);
-            // fin.seekg(0, ios::end);
-            // int iSize = fin.tellg();
-            // char* szBuf = new (std::nothrow) char[iSize];
-
-            // fin.seekg(0, ios::beg);
-            // fin.read(szBuf, sizeof(char) * iSize);
-            // fin.close();
-
-            // string base64_img = base64_encode(szBuf, iSize);
 
             // minio upload
-            ret = Minio_File_Upload(mycameras[i], out_timesnap);
+            ret = Minio_File_Upload(mycameras[i], out_timesnap, sncode);
 
             if(ret == 0)
             {
