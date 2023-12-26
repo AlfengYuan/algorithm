@@ -27,6 +27,7 @@ You may obtain a copy of the License at
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <filesystem>
 #define USE_SOPHON_SAIL
 #include "miniocpp/client.h"
 
@@ -67,6 +68,36 @@ public:
     string addres;
 }Cameras;
 
+static string get_current_time()
+{
+    //get timesnap
+//    std::chrono::system_clock::time_point now = std::chrono::system_clock::now() + std::chrono::minutes(2)
+//                                                - std::chrono::seconds(7);
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    time_t tNow = std::chrono::system_clock::to_time_t(now);
+    std::tm *now_tm = std::localtime(&tNow);
+    char buffer[200];
+    std::strftime(buffer, size(buffer), "%Y%m%d%H%M%S", now_tm);
+//  string str_time = std::ctime(&tNow);
+    string str_time = buffer;
+    return str_time;
+}
+
+static void destroy_old_images(const std::string imgdir)
+{
+    for(auto &entry : std::filesystem::directory_iterator(imgdir))
+    {
+        if(is_regular_file(entry))
+        {
+            std::string filename = entry.path().stem();
+            if(filename < get_current_time())
+            {
+                std::filesystem::remove(entry.path());
+            }
+        }
+    }
+}
+
 static std::string md5(const std::string &input)
 {
     // init EVP
@@ -98,21 +129,6 @@ static std::string md5(const std::string &input)
     }
 
     return result;
-}
-
-static string get_current_time()
-{
-    //get timesnap
-//    std::chrono::system_clock::time_point now = std::chrono::system_clock::now() + std::chrono::minutes(2)
-//                                                - std::chrono::seconds(7);
-    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-    time_t tNow = std::chrono::system_clock::to_time_t(now);
-    std::tm *now_tm = std::localtime(&tNow);
-    char buffer[200];
-    std::strftime(buffer, size(buffer), "%Y%m%d%H%M%S", now_tm);
-//  string str_time = std::ctime(&tNow);
-    string str_time = buffer;
-    return str_time;
 }
 
 int MQTT_PubMessage(Cameras &camera, string &timesnap, const string SN)
@@ -473,7 +489,11 @@ int main(int argc, char *argv[]){
                 out_timesnap = get_current_time();
             }
 
-            if(out_state == state) continue;
+            if(out_state == state) {
+                // Destory old images
+                destroy_old_images("results/images/");
+                continue;
+            }
 
             mycameras[i].state = out_state;
 
@@ -489,6 +509,9 @@ int main(int argc, char *argv[]){
                 // MQTTMessage publish
                 MQTT_PubMessage(mycameras[i], out_timesnap, sncode);
             }
+
+            // Destory old images
+            destroy_old_images("results/images/");
         }
     }
 

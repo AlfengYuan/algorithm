@@ -8,7 +8,7 @@ cd $dname
 export LD_LIBRARY_PATH=`pwd`
 chmod 777 . * -R
 
-app='a.out'
+app='sophon-app.soc'
 app_id=`pidof $app|wc -l`
 
 if [ $app_id -gt 0 ];
