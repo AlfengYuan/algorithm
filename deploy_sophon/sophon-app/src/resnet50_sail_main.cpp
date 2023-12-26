@@ -82,7 +82,7 @@ static string get_current_time()
     return str_time;
 }
 
-int MQTT_PubMessage(Cameras &camera, string &timesnap)
+int MQTT_PubMessage(Cameras &camera, string &timesnap, const string SN)
 {
 
     // creat MQTTClient
@@ -93,7 +93,7 @@ int MQTT_PubMessage(Cameras &camera, string &timesnap)
     char buffer[200];
 
     int rc = 0;
-    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    if ((rc = MQTTClient_create(&client, ADDRESS, SN.c_str(), MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to create client, return code %d\n", rc);
         // exit(EXIT_FAILURE);
@@ -147,7 +147,7 @@ int Minio_File_Upload(Cameras &camera, string &timesnap)
 
     // Create S3 client
     minio::s3::Client client(base_url, &provider);
-    client.Debug(true);
+    client.Debug(false);
     std::string bucket_name = "sqsy";
 
     // Check 'asiatrip' bucket exist or not.
@@ -405,6 +405,9 @@ int main(int argc, char *argv[]){
     {
         sncode = root["SN"].asString();
     }
+    else{
+        sncode = get_current_time();
+    }
 
     bool status = true;
     int ret = 0;
@@ -459,7 +462,7 @@ int main(int argc, char *argv[]){
             if(ret == 0)
             {
                 // MQTTMessage publish
-                MQTT_PubMessage(mycameras[i], out_timesnap);
+                MQTT_PubMessage(mycameras[i], out_timesnap, sncode);
             }
         }
     }
