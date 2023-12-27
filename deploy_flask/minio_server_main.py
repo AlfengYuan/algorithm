@@ -24,6 +24,9 @@ def minio_object_download(project):
     if request.method != 'POST':
         return {"error": "request method only support POST"}
 
+    if project not in PROJECTS["download"]:
+        return {"error": "project is not right!"}
+
     if request.json.get('bucket_name'):
         bucket_name = request.json['bucket_name']
     else:
@@ -34,16 +37,11 @@ def minio_object_download(project):
     else:
         return {"error": "not right object_name params by json type!"}
 
+
+
     result = base64.b64encode(minioClient.get_object(bucket_name, object_name).read()).decode("utf-8")
 
     return result
-
-# img = base64.b64decode(result.encode("utf-8"))
-
-
-# date = np.array(Image.open(io.BytesIO(img)).convert('RGB'))
-
-# print(date.shape)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
