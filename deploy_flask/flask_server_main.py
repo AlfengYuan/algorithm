@@ -1,3 +1,8 @@
+# -- coding: utf-8 --
+# @Time: 2023/12/27
+# @Author: yyf
+# @File: flask_server_main.py
+
 # This is a sample Python script.
 import os.path
 
@@ -7,30 +12,17 @@ from flask import Flask, request
 from PIL import Image
 import io
 import numpy as np
-import pandas as pd
 import face_recognition
-import pdb
-import gevent
 from gevent import pywsgi
-import json
 import base64
 from ultralytics import YOLO
-import pdb
-
+from server_configs import *
 model = YOLO("yolov8n.pt")
 
 app = Flask(__name__)
-projects = {"face": ["cjjb"], "upload": ["sqsy"]}
-
-HOSTS = ["127.0.0.1"]
-FACE_ENCODE_URL = '/face-encode/<project>'
-FACE_COMPARE_URL = '/face-compare/<project>'
-UPLOAD_URL = '/upload/<project>'
-
 
 @app.route(FACE_ENCODE_URL, methods=['POST'])
 def face_encode(project):
-    # print("1111111111111111111")
     if request.remote_addr not in HOSTS:
         return
 
@@ -40,7 +32,7 @@ def face_encode(project):
     if request.json.get('image'):
         im_bytes = base64.b64decode(request.json['image'].encode("utf-8"))
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
-        if project in projects["face"]:
+        if project in PROJECTS["face"]:
             # pdb.set_trace()
             # features = face_recognition.face_encodings(face_image=im, known_face_locations=None, num_jitters=5,
             #                                                 model='large')
@@ -106,7 +98,7 @@ def face_compare(project):
         assert len(list_of_face_index) == len(list_of_face_encodings)
         if len(list_of_face_encodings) == 0:
             return "-1"
-        if project in projects["face"]:
+        if project in PROJECTS["face"]:
             # pdb.set_trace()
             # a_single_unknow_face_encoding = face_recognition.face_encodings(face_image=im, known_face_locations=None,
             #                                                                 num_jitters=5, model='large')
@@ -167,7 +159,7 @@ def upload(project):
         im_bytes = im_file.read()
         im = Image.open(io.BytesIO(im_bytes))
 
-        if project in projects["upload"]:
+        if project in PROJECTS["upload"]:
             im.save("test.jpg")
             if os.path.exists("test.jpg"):
                 return "SUCCESS"

@@ -1,7 +1,8 @@
-# YOLOv5 🚀 by Ultralytics, AGPL-3.0 license
-"""
-Perform test request
-"""
+# -- coding: utf-8 --
+# @Time: 2023/12/27
+# @Author: yyf
+# @File: flask_example_request.py
+
 import base64
 import pprint
 
