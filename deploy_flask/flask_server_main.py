@@ -25,10 +25,8 @@ app = Flask(__name__)
 def face_encode(project):
     if request.remote_addr not in HOSTS:
         return
-
     if request.method != 'POST':
         return {"error": "request method only support POST"}
-
     if request.json.get('image'):
         im_bytes = base64.b64decode(request.json['image'].encode("utf-8"))
         im = np.array(Image.open(io.BytesIO(im_bytes)).convert('RGB'))
