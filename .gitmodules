@@ -1,0 +1,3 @@
+[submodule "deploy_flask"]
+	path = deploy_flask
+	url = https://github.com/AlfengYuan/deploy_flask
