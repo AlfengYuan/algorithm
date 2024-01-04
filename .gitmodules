@@ -1,3 +1,6 @@
 [submodule "deploy_flask"]
 	path = deploy_flask
 	url = https://github.com/AlfengYuan/deploy_flask.git
+[submodule "deploy_sophon"]
+	path = deploy_sophon
+	url = https://github.com/AlfengYuan/deploy_sophon.git
